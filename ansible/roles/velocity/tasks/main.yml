@@ -49,13 +49,17 @@
     label: "{{ item.dest }}"
   notify: Restart velocity
 
-# Mirrors today's mode. Hardening (0600) is a separate, reviewed change.
-- name: Forwarding secret file permissions
-  ansible.builtin.file:
-    path: "{{ velocity_dir }}/forwarding.secret"
+# Must match the secret in ATM10's proxy-compatible-forge.toml.
+- name: Forwarding secret
+  ansible.builtin.copy:
+    content: "{{ velocity_forwarding_secret }}"
+    dest: "{{ velocity_dir }}/forwarding.secret"
     owner: "{{ admin_user }}"
     group: "{{ admin_user }}"
-    mode: "0644"
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart velocity
 
 - name: Read Velocity and plugin jars
   ansible.builtin.stat:

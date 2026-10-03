@@ -1,0 +1,23 @@
+# Software that was used once and is now removed on purpose. Keeping it here
+# (instead of uninstalling by hand) makes the removal reviewable and re-runnable.
+retired_packages:
+  # Samba: the only share was CasaOS's guest-writable [Shared]. The files in
+  # /DATA/Media/Shared are kept; purging only removes the server and its config.
+  - samba
+  - samba-common
+  - samba-common-bin
+  - samba-ad-provision
+  - samba-dsdb-modules
+  - samba-vfs-modules
+  - python3-samba
+  # Remote desktop: replaced by SSH + VS Code.
+  - xrdp
+  - xorgxrdp
+
+# Ollama was installed with its upstream script, not apt.
+# Its data under /DATA/AppData (ollama-nvidia, open-webui-ollama) is kept.
+retired_ollama_paths:
+  - /etc/systemd/system/ollama.service
+  - /usr/local/bin/ollama
+  - /usr/local/lib/ollama
+  - /usr/share/ollama

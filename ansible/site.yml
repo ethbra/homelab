@@ -1,6 +1,12 @@
 - name: Svalbard host baseline
   hosts: svalbard
   become: true
+  pre_tasks:
+    - name: Load encrypted secrets
+      community.sops.load_vars:
+        file: ../secrets/svalbard.yaml
+      no_log: true
+      tags: [always]
   roles:
     - role: docker
       tags: [docker]
@@ -12,3 +18,7 @@
       tags: [firewall]
     - role: velocity
       tags: [velocity]
+    - role: access
+      tags: [access]
+    - role: retired
+      tags: [retired]

@@ -1,0 +1,7 @@
+# Only these accounts may log in over SSH, and only with a key.
+access_ssh_users:
+  - "{{ admin_user }}"
+
+# Former login accounts. Their home directories are removed with them.
+access_retired_users:
+  - admin

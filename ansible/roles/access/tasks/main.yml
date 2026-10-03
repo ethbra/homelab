@@ -1,0 +1,42 @@
+# Lock-out guard: refuse to disable passwords unless every allowed user
+# already has a working authorized key.
+- name: Read authorized keys of allowed users
+  ansible.builtin.command:
+    cmd: "ssh-keygen -lf /home/{{ item }}/.ssh/authorized_keys"
+  loop: "{{ access_ssh_users }}"
+  register: access_authorized_keys
+  changed_when: false
+  failed_when: access_authorized_keys.rc != 0 or access_authorized_keys.stdout | length == 0
+  check_mode: false
+
+- name: SSH hardening drop-in
+  ansible.builtin.template:
+    src: 10-homelab.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-homelab.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload sshd
+
+- name: Full sshd configuration is valid
+  ansible.builtin.command:
+    cmd: /usr/sbin/sshd -t
+  changed_when: false
+  check_mode: false
+
+# A leftover line for a user that does not exist ("Svalbard", capital S).
+# The real account gets sudo through the sudo group.
+- name: Stale sudoers line is removed
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^Svalbard\s+ALL='
+    state: absent
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Retired login accounts are removed
+  ansible.builtin.user:
+    name: "{{ item }}"
+    state: absent
+    remove: true
+  loop: "{{ access_retired_users }}"

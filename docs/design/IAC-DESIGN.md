@@ -224,6 +224,23 @@ Things CasaOS currently does implicitly, which the compose files must state:
 - **ATM10 loopback invariant** becomes an automated assertion: the playbook
   fails if 25565 is published on anything but `127.0.0.1`.
 
+## Decisions for the container stacks (phase 3)
+
+Made 2026-10-02:
+
+- **Time zone:** `America/Los_Angeles` everywhere (today the stacks mix
+  `Europe/London`, `US/Pacific` and `America/Los_Angeles`).
+- **Images pinned to versions**, Plex included. Plex went to `:latest` only
+  while chasing what turned out to be the HTTP/HTTPS link issue.
+- **No plaintext credentials in compose files.** App logins (e.g.
+  Transmission's) come from `secrets/` via SOPS and are rendered into
+  root-only `.env` files at deploy time.
+- **Crafty runs unprivileged.** `privileged: true` was a workaround for an old
+  Java problem; it is removed during the move and ATM10 is tested afterwards.
+- **Crafty publishes only** the panel (8111) and ATM10 on `127.0.0.1:25565`.
+  Its other ports (8100, 8112, 19132/udp) are dropped; 25566 and up stay
+  unpublished (Crafty reserves them for extra servers).
+
 ## Crafty and ATM10
 
 Crafty is stateful and UI-driven, so only the edges are code:
@@ -250,7 +267,7 @@ Never in the repo: the world, the pack's 448 jars, Crafty's database, backups.
 |---|---|---|
 | 1 | **Skeleton and proof** | repo under git; first signed commit; pre-commit installed; SOPS round-trip works with both keys; gitleaks clean on full history; CI green after first push |
 | 2a | **Host baseline: mirror** | Ansible roles describe today's host exactly, defects included; `--check --diff` against the live box is **empty** |
-| 2b | **Host baseline: change** | planned changes, one reviewed commit each: SSH hardening, secret file modes, Velocity to `/opt/velocity`, storage role takes over `/DATA`, cleanup |
+| 2b | **Host baseline: change** | planned changes, one reviewed commit each: secrets from SOPS (done in code), SSH key-only, retire Samba/xrdp/ollama and the old `admin` account, Velocity to `/opt/velocity`, storage role takes over `/DATA`, cleanup |
 | 3 | **Containers** | all seven stacks run from `stacks/`; CasaOS removed; `docs/current/` rewritten to match |
 | 4 | **Cloudflare + GitOps** | DNS/tunnel in OpenTofu (state encrypted, not in git); pull agent and drift timer running |
 | 5 | **Storage hosting** | designed and built in the repo |

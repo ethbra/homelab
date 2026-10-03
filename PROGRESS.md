@@ -19,6 +19,22 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-02 (late) - IaC phase 2: decisions, secrets, removals (code only)
+- Root check of the mirror roles: ok=28 changed=0. Phase 2a mirror confirmed.
+- Decided: remove Samba, xrdp and ollama; retire the `admin` login account
+  (after the owner checks its home directory); SSH key-only. New roles
+  `retired` and `access` do this. Not applied yet.
+- `/DATA/Media/Shared` is **not** empty: 14 GB of photos/videos (CR2, MP4,
+  2025-07-12). Removing Samba keeps them.
+- Secrets move into `secrets/svalbard.yaml` (SOPS): tunnel token and Velocity
+  forwarding secret. Roles render them with `no_log`/no diff; the forwarding
+  secret becomes mode 0600.
+- Deleted Crafty's `default-creds.txt` (stale; Crafty now has custom creds + 2FA).
+- ATM10 has been stopped since 2026-10-01 15:21 (clean shutdown). The Java
+  process seen today was the Vanilla server, stopped from Crafty at 20:48.
+- Container decisions recorded in IAC-DESIGN (time zone, pinned images,
+  credentials via SOPS, Crafty unprivileged, Crafty ports).
+
 ### 2026-10-02 (night) - IaC phase 2a: first mirror roles
 - Read-only host inventory taken (non-root by Claude, root-only parts by the
   owner with a reviewed script). Output kept outside the repo.
@@ -140,7 +156,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 **Soon-ish**
 - [ ] Rotate the Cloudflare tunnel token (it was printed into a session transcript).
-- [ ] Confirm the Crafty admin password was changed; delete `default-creds.txt`.
+- [x] Crafty admin password changed (custom creds + 2FA); `default-creds.txt` deleted 2026-10-02.
 - [ ] Verify SSH is key-only, no root login; decide on xrdp exposure.
 - [x] ~~Bump the Plex image~~ already on 1.43.4 via `:latest` (2026-10-02); pin a version when the stack moves into the repo.
 - [ ] ~~`sudo netfilter-persistent save`~~ Skip: the IaC firewall role will own all rules and retire `rules.v4` (see IAC-DESIGN). Saving now would also snapshot Docker's own rules.

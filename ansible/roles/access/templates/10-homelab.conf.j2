@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+# sshd uses the FIRST value it reads for each setting, and this drop-in is
+# included at the top of sshd_config, so these override anything below it.
+
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+AllowUsers {{ access_ssh_users | join(' ') }}
+MaxAuthTries 3
+X11Forwarding no

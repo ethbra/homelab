@@ -1,0 +1,34 @@
+- name: Retired packages are purged
+  ansible.builtin.apt:
+    name: "{{ retired_packages }}"
+    state: absent
+    purge: true
+
+- name: Check for the Ollama unit
+  ansible.builtin.stat:
+    path: /etc/systemd/system/ollama.service
+  register: retired_ollama_unit
+
+- name: Ollama is stopped and disabled
+  ansible.builtin.systemd_service:
+    name: ollama
+    state: stopped
+    enabled: false
+  when: retired_ollama_unit.stat.exists
+
+- name: Ollama files are removed
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ retired_ollama_paths }}"
+  notify: Reload systemd
+
+- name: Ollama service account is removed
+  ansible.builtin.user:
+    name: ollama
+    state: absent
+
+- name: Ollama group is removed
+  ansible.builtin.group:
+    name: ollama
+    state: absent

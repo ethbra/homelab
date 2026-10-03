@@ -19,13 +19,16 @@
     name: cloudflared
     state: present
 
-# Only ownership and mode for now. The value moves into secrets/ (SOPS) next.
-- name: Tunnel token file permissions
-  ansible.builtin.file:
-    path: /etc/cloudflared/token
+- name: Tunnel token
+  ansible.builtin.copy:
+    content: "{{ cloudflared_tunnel_token }}"
+    dest: /etc/cloudflared/token
     owner: root
     group: root
     mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart cloudflared
 
 - name: Cloudflared units
   ansible.builtin.copy:
