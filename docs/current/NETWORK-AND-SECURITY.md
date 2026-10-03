@@ -105,14 +105,12 @@ Saved rules at `/etc/iptables/rules.v4` (saved 2026-09-18, restored at boot by
 - Docker's own container-isolation rules
 - default policies: `INPUT ACCEPT`, `FORWARD DROP`
 
-> **Status 2026-10-01:** the unit is enabled for boot but showed `inactive`, so
-> the chain may not be live yet. Start it with `sudo systemctl start velocity-firewall`
-> (idempotent). Until the rules are live, only RealIP's application-level check
-> restricts the Velocity port.
->
-> Verify the live state: `sudo iptables -S INPUT | grep TCPSHIELD` and
-> `sudo iptables -L TCPSHIELD_MC -n`. If you run `sudo netfilter-persistent save`
-> afterwards, the new chain is saved too (and the boot script still works).
+> **Status 2026-10-02:** verified live. `velocity-firewall` ran with result
+> `success`, `TCPSHIELD_MC` holds the two TCPShield ranges plus a final DROP,
+> and `INPUT` hooks it for `-d 192.168.1.22 -p tcp --dport 25565`. Re-check with
+> `sudo iptables -L TCPSHIELD_MC -n` and `sudo iptables -S INPUT | grep TCPSHIELD`.
+> `netfilter-persistent save` is not needed: the unit re-applies the chain at
+> every boot, and the IaC firewall role will replace `rules.v4`.
 
 ## Secrets: where they live (values are never written here)
 
@@ -135,8 +133,10 @@ Ordered roughly by importance.
    turn UPnP off on the router.
 2. **No dynamic DNS now.** Fine while the WAN IP is stable. If the ISP changes
    it, players are cut off until the TCPShield backend IP is updated by hand.
-   Check whether the TCPShield backend is an IP or a hostname; if you want
-   automatic updates, use your DNS provider's DDNS (e.g. Cloudflare), not No-IP.
+   The TCPShield backend is a literal IP (checked 2026-10-02). To get automatic
+   updates it would need to be a hostname, if TCPShield accepts one; use your
+   DNS provider's DDNS (e.g. Cloudflare), not No-IP. A hostname that resolves
+   to the home IP reveals that IP to anyone who learns the name.
    Also delete the stale DDNS key/hostnames in the noip.com account.
 3. **No host-level default-deny.** `INPUT` policy is ACCEPT; only the Minecraft
    port is filtered. Reasonable for a LAN box behind NAT, but combine with (2).

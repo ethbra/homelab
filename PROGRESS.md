@@ -9,15 +9,28 @@ Newest first. Update this whenever something is changed, decided or left open.
 | GPU in Docker (NVIDIA toolkit, default runtime) | done |
 | Plex in container, library migrated, same server identity | done |
 | Plex hardware transcoding confirmed (`(hw)` in dashboard) | **not yet verified** |
-| Native Plex removed | **pending** (stopped + disabled, still installed) |
+| Native Plex removed | done (package, units and `/var/lib/plexmediaserver` all gone; verified 2026-10-02). The container is the only Plex; there is no rollback copy |
 | ATM10 behind Velocity + TCPShield, real IPs in logs | done, joins work |
 | Velocity as a systemd service | done |
-| TCPShield firewall (`TCPSHIELD_MC`) | unit installed + **enabled for boot**, but `inactive` this boot (never started via systemd). Live rules exist only if the script was also run by hand: **verify**, or just `sudo systemctl start velocity-firewall` (safe to repeat) |
+| TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
 | Infrastructure as code | phase 1 done 2026-10-02; phase 2 (host baseline) next. See docs/design/IAC-DESIGN.md |
 
 ## Log
+
+### 2026-10-02 (evening) - verification pass
+- Firewall: started `velocity-firewall`; `TCPSHIELD_MC` is live (ACCEPT
+  198.178.119.0/24 and 104.234.6.0/25, then DROP) and hooked from `INPUT`.
+- `noip-duc` and `plexmediaserver` are not installed (the `apt purge` calls
+  failed with "Unable to locate package" because they were already gone).
+  `/var/lib/plexmediaserver` no longer exists.
+- Router (Orbi RBR50): Internet setup is dynamic from the ISP; the DNS servers
+  it uses (209.18.47.61/62) belong to Charter/Spectrum (ARIN), the ISP, so
+  they are not suspicious. Static-IP mode was tried and dropped the
+  connection; reverted to dynamic. Router details are not recorded here.
+- TCPShield backend is a literal IP (see the open item below).
+- Both age private keys backed up offline (KeePass, two locations).
 
 ### 2026-10-02 (later) - IaC phase 1 done
 - Repo published: https://github.com/ethbra/homelab (public). Both commits
@@ -99,19 +112,19 @@ Newest first. Update this whenever something is changed, decided or left open.
 ## Open items / TODO
 
 **Do soon**
-- [ ] Back up both age private keys offline (`~/.config/sops/age/keys.txt`, `/etc/homelab/age.key`). Losing both = losing every encrypted secret.
-- [ ] Finish No-IP removal: `sudo apt purge noip-duc` (package + disabled unit still installed), and delete the DDNS key/hostnames or change the password in your noip.com account.
-- [ ] Find out how the TCPShield backend is set (IP vs hostname). With no DDNS, an ISP IP change takes the server offline.
-- [ ] Apply + verify the firewall: `sudo systemctl start velocity-firewall`, then `sudo iptables -L TCPSHIELD_MC -n` and `sudo iptables -S INPUT | grep TCPSHIELD`. (Until then Velocity relies only on RealIP's application-level check.)
+- [x] Back up both age private keys offline (2026-10-02: password-protected KeePass file, kept on a second PC and a flash drive).
+- [ ] Finish No-IP removal: the `noip-duc` package and unit are already gone (verified 2026-10-02). Remaining: delete the DDNS key/hostnames or change the password in your noip.com account.
+- [ ] **TCPShield backend is a literal IP** (checked 2026-10-02; value deliberately not recorded here), so an ISP address change takes the server offline until it is edited by hand. Spectrum residential, dynamic. Options: accept and watch for it, or use a hostname kept current by a DDNS timer (check first that the backend field accepts one; trade-off: the name would reveal the home IP to anyone who learns it). Decide before IaC phase 4.
+- [x] Apply + verify the firewall (2026-10-02).
 - [ ] Reserve `192.168.1.22` for this machine in the router.
-- [ ] Confirm Plex hardware transcode works, then `sudo apt purge plexmediaserver`.
+- [ ] Confirm Plex hardware transcode works (native Plex is already removed).
 
 **Soon-ish**
 - [ ] Rotate the Cloudflare tunnel token (it was printed into a session transcript).
 - [ ] Confirm the Crafty admin password was changed; delete `default-creds.txt`.
 - [ ] Verify SSH is key-only, no root login; decide on xrdp exposure.
 - [ ] Bump the Plex image to >= the version that wrote the migrated database (1.42.2).
-- [ ] `sudo netfilter-persistent save` once the firewall is verified, so `rules.v4` matches reality.
+- [ ] ~~`sudo netfilter-persistent save`~~ Skip: the IaC firewall role will own all rules and retire `rules.v4` (see IAC-DESIGN). Saving now would also snapshot Docker's own rules.
 
 **Future features**
 - [ ] **Storage hosting / remote file access.** Design properly later (the GNOME WebDAV share was an unfinished start and is now off). Needs: auth, encryption in transit, how it's reached from outside (Cloudflare Tunnel vs VPN), and which folders are exposed.
