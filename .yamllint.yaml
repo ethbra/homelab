@@ -1,6 +1,7 @@
 extends: default
 ignore: |
   secrets/
+  ansible/.ansible/
 rules:
   document-start: disable
   line-length:

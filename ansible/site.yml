@@ -1,0 +1,14 @@
+- name: Svalbard host baseline
+  hosts: svalbard
+  become: true
+  roles:
+    - role: docker
+      tags: [docker]
+    - role: nvidia_toolkit
+      tags: [nvidia]
+    - role: cloudflared
+      tags: [cloudflared]
+    - role: firewall
+      tags: [firewall]
+    - role: velocity
+      tags: [velocity]

@@ -15,9 +15,28 @@ Newest first. Update this whenever something is changed, decided or left open.
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phase 1 done 2026-10-02; phase 2 (host baseline) next. See docs/design/IAC-DESIGN.md |
+| Infrastructure as code | phase 1 done; phase 2a (mirror roles) in progress: docker, nvidia_toolkit, cloudflared, firewall, velocity give an empty check-mode diff. See docs/design/IAC-DESIGN.md |
 
 ## Log
+
+### 2026-10-02 (night) - IaC phase 2a: first mirror roles
+- Read-only host inventory taken (non-root by Claude, root-only parts by the
+  owner with a reviewed script). Output kept outside the repo.
+- Installed `ansible-core` 2.19.13 and `ansible-lint` 26.9.0 via pipx (user level).
+- Added `ansible/` with roles `docker`, `nvidia_toolkit`, `cloudflared`,
+  `firewall`, `velocity`. Live files copied verbatim into the roles.
+  Check mode against the live box: ok=28 changed=0 (run without sudo).
+- The live firewall script now lives in the repo as a template
+  (`roles/firewall/templates/`), deployed to its existing path.
+- CI gained an `ansible` job (syntax check + ansible-lint, production profile).
+- High CPU earlier this evening: VS Code's file search (`rg --files --follow`)
+  crawling `/` from a window with no folder open (`/proc`, `/sys`, the 2.7 TB
+  mergerfs pool). Not a server problem. Fix: open a folder, and set
+  `"search.followSymlinks": false`.
+- Inventory corrections to `docs/current/` (to fold in when 2b lands): GPU is an
+  RTX 2070 **SUPER**; Plex runs `linuxserver/plex:latest` (1.43.4) as PUID/PGID
+  1000 (the `.env` 911 values are unused); Velocity logs to `velocity.log`
+  (systemd), not `logs/latest.log`; `cloudflared-update.timer` is disabled.
 
 ### 2026-10-02 (evening) - verification pass
 - Firewall: started `velocity-firewall`; `TCPSHIELD_MC` is live (ACCEPT
@@ -123,7 +142,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 - [ ] Rotate the Cloudflare tunnel token (it was printed into a session transcript).
 - [ ] Confirm the Crafty admin password was changed; delete `default-creds.txt`.
 - [ ] Verify SSH is key-only, no root login; decide on xrdp exposure.
-- [ ] Bump the Plex image to >= the version that wrote the migrated database (1.42.2).
+- [x] ~~Bump the Plex image~~ already on 1.43.4 via `:latest` (2026-10-02); pin a version when the stack moves into the repo.
 - [ ] ~~`sudo netfilter-persistent save`~~ Skip: the IaC firewall role will own all rules and retire `rules.v4` (see IAC-DESIGN). Saving now would also snapshot Docker's own rules.
 
 **Future features**

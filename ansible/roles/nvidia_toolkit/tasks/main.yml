@@ -1,0 +1,26 @@
+# The driver itself (nvidia-driver) comes from Debian non-free.
+- name: NVIDIA driver
+  ansible.builtin.apt:
+    name: nvidia-driver
+    state: present
+
+- name: NVIDIA container toolkit apt key
+  ansible.builtin.copy:
+    src: nvidia-container-toolkit-keyring.gpg
+    dest: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: NVIDIA container toolkit apt repository
+  ansible.builtin.copy:
+    src: nvidia-container-toolkit.list
+    dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: NVIDIA container toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present

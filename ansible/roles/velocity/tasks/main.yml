@@ -1,0 +1,95 @@
+- name: Adoptium apt key
+  ansible.builtin.copy:
+    src: adoptium.gpg
+    dest: /etc/apt/keyrings/adoptium.gpg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Adoptium apt repository
+  ansible.builtin.copy:
+    src: adoptium.list
+    dest: /etc/apt/sources.list.d/adoptium.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Java for Velocity
+  ansible.builtin.apt:
+    name: temurin-25-jdk
+    state: present
+
+- name: Velocity config
+  ansible.builtin.template:
+    src: velocity.toml.j2
+    dest: "{{ velocity_dir }}/velocity.toml"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  notify: Restart velocity
+
+- name: Velocity start script, icon and RealIP config
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ velocity_dir }}/{{ item.dest }}"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - src: start.sh
+      dest: start.sh
+      mode: "0755"
+    - src: server-icon.png
+      dest: server-icon.png
+      mode: "0755"
+    - src: tcpshield-config.toml
+      dest: plugins/tcpshield/config.toml
+      mode: "0644"
+  loop_control:
+    label: "{{ item.dest }}"
+  notify: Restart velocity
+
+# Mirrors today's mode. Hardening (0600) is a separate, reviewed change.
+- name: Forwarding secret file permissions
+  ansible.builtin.file:
+    path: "{{ velocity_dir }}/forwarding.secret"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+
+- name: Read Velocity and plugin jars
+  ansible.builtin.stat:
+    path: "{{ velocity_dir }}/{{ item.path }}"
+    checksum_algorithm: sha256
+  loop: "{{ velocity_jars }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: velocity_jar_stats
+
+- name: Jars match their pinned checksums
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "{{ item.item.path }} is missing or does not match its pinned sha256"
+    quiet: true
+  loop: "{{ velocity_jar_stats.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Velocity unit
+  ansible.builtin.copy:
+    src: velocity.service
+    dest: /etc/systemd/system/velocity.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart velocity
+
+- name: Velocity enabled and running
+  ansible.builtin.systemd_service:
+    name: velocity
+    enabled: true
+    state: started

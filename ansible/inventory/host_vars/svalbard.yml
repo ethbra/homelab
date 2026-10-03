@@ -1,0 +1,16 @@
+# Facts about this machine that more than one role needs.
+lan_ip: 192.168.1.22          # reserved for this host in the router (see PROGRESS)
+admin_user: svalbard
+
+minecraft_port: 25565
+tcpshield_fallback_ranges:    # https://tcpshield.com/v4/ (the script fetches the live list first)
+  - 198.178.119.0/24
+  - 104.234.6.0/25
+
+# Current (pre-migration) locations. Phase 2b moves these to /opt.
+velocity_dir: /home/svalbard/projects/active/velocity
+firewall_script: /home/svalbard/projects/active/firewall-velocity-tcpshield.sh
+
+# Disruptive restarts (Docker, Velocity) only happen when this is true:
+#   ansible-playbook site.yml -K -e allow_disruptive_restarts=true
+allow_disruptive_restarts: false

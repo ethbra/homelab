@@ -1,0 +1,25 @@
+- name: TCPShield firewall script
+  ansible.builtin.template:
+    src: firewall-velocity-tcpshield.sh.j2
+    dest: "{{ firewall_script }}"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  notify: Re-apply firewall
+
+- name: TCPShield firewall unit
+  ansible.builtin.copy:
+    src: velocity-firewall.service
+    dest: /etc/systemd/system/velocity-firewall.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Re-apply firewall
+
+- name: TCPShield firewall enabled and applied
+  ansible.builtin.systemd_service:
+    name: velocity-firewall
+    enabled: true
+    state: started

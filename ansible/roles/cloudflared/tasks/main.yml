@@ -1,0 +1,52 @@
+- name: Cloudflare apt key
+  ansible.builtin.copy:
+    src: cloudflare-main.gpg
+    dest: /usr/share/keyrings/cloudflare-main.gpg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Cloudflare apt repository
+  ansible.builtin.copy:
+    src: cloudflared.list
+    dest: /etc/apt/sources.list.d/cloudflared.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Cloudflared package
+  ansible.builtin.apt:
+    name: cloudflared
+    state: present
+
+# Only ownership and mode for now. The value moves into secrets/ (SOPS) next.
+- name: Tunnel token file permissions
+  ansible.builtin.file:
+    path: /etc/cloudflared/token
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Cloudflared units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - cloudflared.service
+    - cloudflared-update.service
+    - cloudflared-update.timer
+  notify:
+    - Reload systemd
+    - Restart cloudflared
+
+- name: Cloudflared enabled and running
+  ansible.builtin.systemd_service:
+    name: cloudflared
+    enabled: true
+    state: started
+
+# cloudflared-update.timer is deliberately left alone: it is disabled, and it is
+# pointless for an apt-installed cloudflared. Removed in the phase 2b cleanup.

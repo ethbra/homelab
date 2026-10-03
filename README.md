@@ -36,7 +36,9 @@ homelab/
   velocity/                  -> symlink to ../velocity (the live Velocity proxy)
   config/                    symlinks to the real, live config files (single source of truth)
     atm10/  velocity/  casaos-apps  iptables-rules.v4
-  .github/workflows/ci.yml   CI: lint + secret scanning (never deploys)
+  ansible/                   host configuration (IaC phase 2; see docs/design/IAC-DESIGN.md)
+    site.yml                 the playbook; roles/ holds one role per service
+  .github/workflows/ci.yml   CI: lint, Ansible checks, secret scanning (never deploys)
   .sops.yaml                 who can decrypt files in secrets/
   .pre-commit-config.yaml    the same checks, run locally before each commit
 ```

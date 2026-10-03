@@ -7,10 +7,11 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key
+      # Role files/ and templates/ mirror live files byte for byte; don't "fix" them.
       - id: end-of-file-fixer
-        exclude: ^secrets/
+        exclude: ^(secrets/|ansible/roles/[^/]+/(files|templates)/)
       - id: trailing-whitespace
-        exclude: ^secrets/
+        exclude: ^(secrets/|ansible/roles/[^/]+/(files|templates)/)
   - repo: https://github.com/gitleaks/gitleaks
     rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
     hooks:

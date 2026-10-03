@@ -1,0 +1,12 @@
+# Restarting Docker restarts every container, so it is opt-in.
+- name: Restart docker
+  ansible.builtin.systemd_service:
+    name: docker
+    state: restarted
+  when: allow_disruptive_restarts | bool
+
+- name: Restart docker (skipped)
+  ansible.builtin.debug:
+    msg: "daemon.json changed; restart Docker in a quiet moment (re-run with -e allow_disruptive_restarts=true)"
+  when: not (allow_disruptive_restarts | bool)
+  listen: Restart docker

@@ -1,0 +1,9 @@
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+# The script is idempotent, so re-running it is safe.
+- name: Re-apply firewall
+  ansible.builtin.systemd_service:
+    name: velocity-firewall
+    state: restarted

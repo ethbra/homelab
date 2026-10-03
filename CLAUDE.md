@@ -17,6 +17,11 @@ Read `README.md`, then `PROGRESS.md`. Update `PROGRESS.md` after any change.
   units point at their current paths (see README).
 
 ## Facts that save time
+- IaC: Ansible lives in `ansible/`. Claude can verify roles against the live
+  box without sudo: `cd ansible && ansible-playbook site.yml --check --diff
+  -e ansible_become=false </dev/null | cat` (Ansible needs blocking stdio; the
+  redirect and pipe provide it). Role `files/`/`templates/` are verbatim
+  mirrors of live files: copy them from the box, never retype them.
 - Box: Debian 12, LAN IP 192.168.1.22, containers managed by CasaOS compose
   files in `/var/lib/casaos/apps/<app>/` (root-only). After editing, use
   `sudo docker compose up -d --force-recreate`; restart does not apply changes.

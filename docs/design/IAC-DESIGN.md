@@ -5,7 +5,7 @@
 > updated as each phase below actually lands; [PROGRESS.md](../../PROGRESS.md)
 > records each step.
 
-Status: phase 1 done (2026-10-02); phase 2 next.
+Status: phase 1 done (2026-10-02); phase 2a (mirror) in progress.
 
 ## Goals
 
@@ -249,13 +249,35 @@ Never in the repo: the world, the pack's 448 jars, Crafty's database, backups.
 | # | Phase | Exit criteria |
 |---|---|---|
 | 1 | **Skeleton and proof** | repo under git; first signed commit; pre-commit installed; SOPS round-trip works with both keys; gitleaks clean on full history; CI green after first push |
-| 2 | **Host baseline** | Ansible roles reproduce today's host; `--check --diff` against the live box is **empty**. Includes the storage role (`/DATA` no longer mounted by CasaOS) and Velocity moved to `/opt/velocity` |
+| 2a | **Host baseline: mirror** | Ansible roles describe today's host exactly, defects included; `--check --diff` against the live box is **empty** |
+| 2b | **Host baseline: change** | planned changes, one reviewed commit each: SSH hardening, secret file modes, Velocity to `/opt/velocity`, storage role takes over `/DATA`, cleanup |
 | 3 | **Containers** | all seven stacks run from `stacks/`; CasaOS removed; `docs/current/` rewritten to match |
 | 4 | **Cloudflare + GitOps** | DNS/tunnel in OpenTofu (state encrypted, not in git); pull agent and drift timer running |
 | 5 | **Storage hosting** | designed and built in the repo |
 
 Phase 2 is the largest. Writing roles that match the live system exactly
 (empty diff) is what makes later phases safe.
+
+### How phase 2 is done
+
+- **Mirror first, change second.** A 2a role must produce an empty diff
+  against the live box, even where the live state is wrong (e.g. a secret
+  file's mode). Fixes come afterwards as their own commits, so every change
+  to the machine is a visible, reviewable diff and nothing changes by accident
+  while the code is being written.
+- **Verbatim mirrors.** Files under a role's `files/` and `templates/` are
+  copied from the live box byte for byte (only variables like the LAN IP are
+  substituted). The whitespace fixers in pre-commit skip them for that reason.
+- **Scope is what we manage, not the whole OS.** Packages, units and configs
+  for the services in this repo. The desktop, GNOME and incidental packages
+  are out of scope; drift detection covers managed resources only.
+- **Disruptive restarts are opt-in.** Handlers that would restart Docker
+  (every container) or Velocity (every player) only print a reminder unless
+  the run sets `-e allow_disruptive_restarts=true`.
+- **Binaries stay out of git.** Jars are verified against pinned SHA-256
+  checksums instead.
+- **Checking:** `ansible-playbook site.yml --check --diff -K` from `ansible/`.
+  Without `-K` (no sudo) it still checks everything except root-only reads.
 
 ## Documentation standard
 
@@ -268,9 +290,9 @@ Phase 2 is the largest. Writing roles that match the live system exactly
 
 ## Open questions
 
+(Decided: Ansible is `ansible-core` 2.19 via pipx, pinned in CI and in this doc.)
+
 - **Alerting channel** for pull failures and drift (ntfy, email, Discord webhook).
-- **Ansible source:** Debian's `ansible` 7.7 (apt, older) vs current
-  `ansible-core` via pipx. Leaning pipx, pinned.
 - **Firewall tool:** keep iptables (matches today) or move to nftables with
   Docker-aware rules. Decide in phase 2.
 - **OpenTofu state:** local on the box with OpenTofu's built-in state

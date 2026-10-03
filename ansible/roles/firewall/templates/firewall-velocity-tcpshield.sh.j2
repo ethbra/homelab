@@ -1,0 +1,58 @@
+#jinja2: comment_start_string:'[#', comment_end_string:'#]'
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Restricts Velocity's public Minecraft port to TCPShield's network only.
+# Velocity runs on the host (not in Docker), so these rules live in INPUT,
+# not DOCKER-USER. Loopback is always allowed so Velocity can reach ATM10
+# on 127.0.0.1:25565.
+
+PORT={{ minecraft_port }}
+BIND_IP={{ lan_ip }}                 # must match `bind` in velocity.toml
+CHAIN=TCPSHIELD_MC
+FALLBACK_RANGES=({{ tcpshield_fallback_ranges | join(" ") }})
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Error: run with sudo" >&2
+  exit 1
+fi
+
+# Prefer TCPShield's live list; fall back to the known ranges if it can't be fetched
+RANGES=()
+if live=$(curl -fsS --max-time 10 https://tcpshield.com/v4/ 2>/dev/null) && [[ -n "$live" ]]; then
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$ ]] && RANGES+=("$line")
+  done <<< "$live"
+fi
+if [[ ${#RANGES[@]} -eq 0 ]]; then
+  echo "Could not fetch live TCPShield list, using fallback ranges"
+  RANGES=("${FALLBACK_RANGES[@]}")
+fi
+
+# Clean up the old Docker-era rules for this port (ATM10 is loopback-only now)
+while iptables -C DOCKER-USER -p tcp --dport "$PORT" -j DROP 2>/dev/null; do
+  iptables -D DOCKER-USER -p tcp --dport "$PORT" -j DROP
+done
+for range in "${FALLBACK_RANGES[@]}" "${RANGES[@]}"; do
+  while iptables -C DOCKER-USER -p tcp --dport "$PORT" -s "$range" -j ACCEPT 2>/dev/null; do
+    iptables -D DOCKER-USER -p tcp --dport "$PORT" -s "$range" -j ACCEPT
+  done
+done
+
+# (Re)build our chain
+iptables -N "$CHAIN" 2>/dev/null || true
+iptables -F "$CHAIN"
+for range in "${RANGES[@]}"; do
+  iptables -A "$CHAIN" -s "$range" -j ACCEPT
+done
+iptables -A "$CHAIN" -j DROP
+
+# Hook the chain into INPUT once, for traffic to Velocity's bind address only
+if ! iptables -C INPUT -p tcp -d "$BIND_IP" --dport "$PORT" -j "$CHAIN" 2>/dev/null; then
+  iptables -I INPUT 1 -p tcp -d "$BIND_IP" --dport "$PORT" -j "$CHAIN"
+fi
+
+echo "Done. Allowed sources for $BIND_IP:$PORT:"
+printf '  %s\n' "${RANGES[@]}"
+echo ""
+iptables -L "$CHAIN" -n --line-numbers

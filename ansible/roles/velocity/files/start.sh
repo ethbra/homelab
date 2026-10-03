@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+exec java \
+  -Dvelocity.max-plugin-message-payload-size.clientbound=16777216 \
+  -Dvelocity.max-known-packs=600 \
+  -Xms512M -Xmx1G -XX:+UseG1GC -XX:G1HeapRegionSize=4M \
+  -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch \
+  -jar velocity.jar
