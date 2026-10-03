@@ -1,4 +1,8 @@
-- name: Reload systemd
+# Handler names are global across roles, so each one is unique to its role.
+# Handlers run in the order listed here: reload before restart.
+
+# Runs even when the restart below is skipped, so systemd never keeps a stale unit loaded.
+- name: Reload systemd (velocity)
   ansible.builtin.systemd_service:
     daemon_reload: true
 
@@ -7,6 +11,7 @@
   ansible.builtin.systemd_service:
     name: velocity
     state: restarted
+    daemon_reload: true
   when: allow_disruptive_restarts | bool
 
 - name: Restart velocity (skipped)

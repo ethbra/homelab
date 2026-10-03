@@ -13,10 +13,10 @@ Commands marked `sudo` need your password. Paths are relative to
 | Task | Command |
 |---|---|
 | Restart Velocity | `sudo systemctl restart velocity` |
-| Velocity status / log | `systemctl status velocity --no-pager` / `tail -f velocity/logs/latest.log` |
+| Velocity status / log | `systemctl status velocity --no-pager` / `journalctl -u velocity -f` |
 | Restart ATM10 | **Crafty web UI** (https://192.168.1.22:8111). Don't kill the Java process by hand; Crafty loses track of it |
 | ATM10 log | `tail -f /DATA/AppData/crafty/servers/1472e5eb-3e4d-4ce7-b2ac-723f83803f19/logs/latest.log` |
-| Re-apply the firewall now | `sudo ~/projects/active/firewall-velocity-tcpshield.sh` |
+| Re-apply the firewall now | `sudo systemctl restart velocity-firewall` |
 | Containers at a glance | `docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'` |
 | Who connected, with what IP? | `grep "logged in with entity" <ATM10 latest.log>` (should show the **player's** IP) and `grep "has connected" velocity/logs/latest.log` |
 
@@ -64,15 +64,18 @@ plugins. Stop the server in Crafty, drop the jar in, start it. For a mod that
 must also exist on clients, make sure players have the same one.
 
 **Rotate the forwarding secret:**
-1. Put a new random string in `velocity/forwarding.secret`.
+1. `sops secrets/svalbard.yaml` and set a new random `velocity_forwarding_secret`;
+   apply with `ansible-playbook site.yml -K --tags velocity`.
 2. Put the same string in `config/atm10/proxy-compatible-forge.toml` (`secret`).
 3. Restart ATM10 (Crafty) and `sudo systemctl restart velocity`.
 
-**Update Velocity:** replace `velocity/velocity.jar` (keep `velocity.toml`,
+**Update Velocity:** put the new jar in `/opt/velocity/` and its sha256 in
+`ansible/roles/velocity/defaults/main.yml`, then apply (keep `velocity.toml`,
 `forwarding.secret`, `plugins/`), then `sudo systemctl restart velocity`.
 
 **If the LAN IP changes** (or you're moving machines): update `bind` in
-`velocity.toml` **and** `BIND_IP` in `firewall-velocity-tcpshield.sh`, re-run
+`lan_ip` in `ansible/inventory/host_vars/svalbard.yml` (used by both `velocity.toml`
+and the firewall script), apply, re-run
 the script, restart Velocity. Better: reserve the IP in your router.
 
 **Edit systemd units:** edit the copy in `systemd/`, then

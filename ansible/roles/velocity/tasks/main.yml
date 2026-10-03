@@ -19,46 +19,53 @@
     name: temurin-25-jdk
     state: present
 
-- name: Velocity config
-  ansible.builtin.template:
-    src: velocity.toml.j2
-    dest: "{{ velocity_dir }}/velocity.toml"
-    owner: "{{ admin_user }}"
-    group: "{{ admin_user }}"
-    mode: "0644"
-  notify: Restart velocity
+- name: Velocity group
+  ansible.builtin.group:
+    name: "{{ velocity_user }}"
+    system: true
 
-- name: Velocity start script, icon and RealIP config
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ velocity_dir }}/{{ item.dest }}"
-    owner: "{{ admin_user }}"
-    group: "{{ admin_user }}"
-    mode: "{{ item.mode }}"
+- name: Velocity service account
+  ansible.builtin.user:
+    name: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    system: true
+    home: "{{ velocity_dir }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Velocity directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    mode: "0750"
   loop:
-    - src: start.sh
-      dest: start.sh
-      mode: "0755"
-    - src: server-icon.png
-      dest: server-icon.png
-      mode: "0755"
-    - src: tcpshield-config.toml
-      dest: plugins/tcpshield/config.toml
-      mode: "0644"
-  loop_control:
-    label: "{{ item.dest }}"
-  notify: Restart velocity
+    - "{{ velocity_dir }}"
+    - "{{ velocity_dir }}/plugins"
+    - "{{ velocity_dir }}/plugins/tcpshield"
 
-# Must match the secret in ATM10's proxy-compatible-forge.toml.
-- name: Forwarding secret
+- name: Check the Velocity directory
+  ansible.builtin.stat:
+    path: "{{ velocity_dir }}"
+  register: velocity_dir_stat
+
+# One-time migration: copy the jars from the old location if they are not
+# here yet. After that they are only verified (below), never overwritten.
+# (Skipped in a first check-mode run, when the directory doesn't exist yet.)
+- name: Jars are copied from the legacy directory
   ansible.builtin.copy:
-    content: "{{ velocity_forwarding_secret }}"
-    dest: "{{ velocity_dir }}/forwarding.secret"
-    owner: "{{ admin_user }}"
-    group: "{{ admin_user }}"
-    mode: "0600"
-  no_log: true
-  diff: false
+    src: "{{ velocity_legacy_dir }}/{{ item.path }}"
+    dest: "{{ velocity_dir }}/{{ item.path }}"
+    remote_src: true
+    force: false
+    owner: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    mode: "0640"
+  loop: "{{ velocity_jars }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: velocity_dir_stat.stat.exists or not ansible_check_mode
   notify: Restart velocity
 
 - name: Read Velocity and plugin jars
@@ -70,26 +77,72 @@
     label: "{{ item.path }}"
   register: velocity_jar_stats
 
+# In check mode on the first run the copies don't exist yet; that is expected.
 - name: Jars match their pinned checksums
   ansible.builtin.assert:
     that:
-      - item.stat.exists
-      - item.stat.checksum == item.item.sha256
+      - (not item.stat.exists and ansible_check_mode) or item.stat.checksum == item.item.sha256
     fail_msg: "{{ item.item.path }} is missing or does not match its pinned sha256"
     quiet: true
   loop: "{{ velocity_jar_stats.results }}"
   loop_control:
     label: "{{ item.item.path }}"
 
-- name: Velocity unit
+- name: Velocity config
+  ansible.builtin.template:
+    src: velocity.toml.j2
+    dest: "{{ velocity_dir }}/velocity.toml"
+    owner: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    mode: "0640"
+  notify: Restart velocity
+
+- name: Velocity start script
+  ansible.builtin.template:
+    src: start.sh.j2
+    dest: "{{ velocity_dir }}/start.sh"
+    owner: root
+    group: "{{ velocity_user }}"
+    mode: "0750"
+  notify: Restart velocity
+
+- name: Velocity icon and RealIP config
   ansible.builtin.copy:
-    src: velocity.service
+    src: "{{ item.src }}"
+    dest: "{{ velocity_dir }}/{{ item.dest }}"
+    owner: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    mode: "0640"
+  loop:
+    - src: server-icon.png
+      dest: server-icon.png
+    - src: tcpshield-config.toml
+      dest: plugins/tcpshield/config.toml
+  loop_control:
+    label: "{{ item.dest }}"
+  notify: Restart velocity
+
+# Must match the secret in ATM10's proxy-compatible-forge.toml.
+- name: Forwarding secret
+  ansible.builtin.copy:
+    content: "{{ velocity_forwarding_secret }}"
+    dest: "{{ velocity_dir }}/forwarding.secret"
+    owner: "{{ velocity_user }}"
+    group: "{{ velocity_user }}"
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart velocity
+
+- name: Velocity unit
+  ansible.builtin.template:
+    src: velocity.service.j2
     dest: /etc/systemd/system/velocity.service
     owner: root
     group: root
     mode: "0644"
   notify:
-    - Reload systemd
+    - Reload systemd (velocity)
     - Restart velocity
 
 - name: Velocity enabled and running

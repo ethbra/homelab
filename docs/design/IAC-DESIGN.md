@@ -184,15 +184,27 @@ homelab/
 
 ## Storage
 
+**Decided 2026-10-02:** hard drives only in the pool, app data on the NVMe,
+`/DATA` kept as the mount point, no RAID for now (a third drive isn't planned;
+revisit SnapRAID if one is added).
+
 Today `/DATA` is a mergerfs pool of `/var/lib/casaos/files` (on the NVMe,
 ~175 GB used), `/mnt/HDD_A` and `/mnt/HDD_B`, and it is **mounted by
 `casaos-local-storage`**, not by fstab. Target:
 
-- The `storage` role owns the pool: disks by UUID, mergerfs installed from
-  apt, mounted via fstab or a systemd `.mount` unit with explicit options.
-- The NVMe branch moves from `/var/lib/casaos/files` to a neutral path
-  (`/srv/pool/nvme`). This is a data move: done with services stopped, using
-  `rsync -aHAX`, verified before the old path is removed.
+- The `storage` role owns the pool: disks by UUID, mergerfs from apt,
+  mounted at `/DATA` (Plex's library stores `/DATA/Media` paths) with
+  `minfreespace=50G`, `moveonenospc=true`, `dropcacheonclose=true`,
+  `func.getattr=newest`, `category.create=mfs`.
+- **Branches: `/mnt/HDD_A` and `/mnt/HDD_B` only.** The NVMe branch
+  (`/var/lib/casaos/files`, about 176 GB) leaves the pool: with a 1 MB
+  `minfreespace` it could otherwise fill the root filesystem.
+- **App data moves to `/srv/appdata` on the NVMe**, outside FUSE (faster, and
+  safer for the apps' SQLite databases). About 93 GB, today spread across all
+  three branches.
+- The move happens once, in a maintenance window with the containers stopped:
+  `rsync -aHAX`, verified before anything old is removed. Because the app data
+  paths change, it is done together with moving the stacks out of CasaOS.
 - Containers start only after the pool is mounted
   (`RequiresMountsFor=/DATA` on the compose units).
 - Storage hosting (remote file access, a future feature) is designed in this
@@ -232,9 +244,15 @@ Made 2026-10-02:
   `Europe/London`, `US/Pacific` and `America/Los_Angeles`).
 - **Images pinned to versions**, Plex included. Plex went to `:latest` only
   while chasing what turned out to be the HTTP/HTTPS link issue.
-- **No plaintext credentials in compose files.** App logins (e.g.
-  Transmission's) come from `secrets/` via SOPS and are rendered into
-  root-only `.env` files at deploy time.
+- **No plaintext credentials in compose files.** App logins come from
+  `secrets/` via SOPS and are rendered into root-only `.env` files at deploy
+  time. One shared login for the media apps (Sonarr, Radarr, Prowlarr,
+  Transmission); Crafty has its own (plus 2FA). The *arr apps store
+  credentials in their own databases, so their login is set once in each UI
+  from the SOPS value; Transmission's comes from the environment.
+- **ATM10 runs on Java 21**, named explicitly in Crafty's execution command
+  (the container's default `java` is 25, and that is what ATM10 used until
+  2026-10-02). The Crafty role asserts it.
 - **Crafty runs unprivileged.** `privileged: true` was a workaround for an old
   Java problem; it is removed during the move and ATM10 is tested afterwards.
 - **Crafty publishes only** the panel (8111) and ATM10 on `127.0.0.1:25565`.

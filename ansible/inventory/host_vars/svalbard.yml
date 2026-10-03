@@ -7,9 +7,12 @@ tcpshield_fallback_ranges:    # https://tcpshield.com/v4/ (the script fetches th
   - 198.178.119.0/24
   - 104.234.6.0/25
 
-# Current (pre-migration) locations. Phase 2b moves these to /opt.
-velocity_dir: /home/svalbard/projects/active/velocity
-firewall_script: /home/svalbard/projects/active/firewall-velocity-tcpshield.sh
+velocity_dir: /opt/velocity
+firewall_script: /usr/local/sbin/homelab-tcpshield-firewall
+
+# Pre-migration locations, read once to copy the jars and then left as a rollback.
+velocity_legacy_dir: /home/svalbard/projects/active/velocity
+firewall_legacy_script: /home/svalbard/projects/active/firewall-velocity-tcpshield.sh
 
 # Disruptive restarts (Docker, Velocity) only happen when this is true:
 #   ansible-playbook site.yml -K -e allow_disruptive_restarts=true

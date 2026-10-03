@@ -26,39 +26,29 @@ homelab/
   docs/
     current/                 how the server runs today (the table above)
     design/                  the target infrastructure-as-code design
-  scripts/                   one-time installers + the live firewall script
-    install-nvidia-container-toolkit.sh
-    install-cloudflared.sh
-    firewall-velocity-tcpshield.sh   -> symlink (real file is ../firewall-velocity-tcpshield.sh)
-    mc-status-ping.py                Minecraft status-ping tester (see RUNBOOK)
-    obsolete/                        superseded scripts, kept for reference
-  systemd/                   templates for units installed in /etc/systemd/system
-  velocity/                  -> symlink to ../velocity (the live Velocity proxy)
-  config/                    symlinks to the real, live config files (single source of truth)
-    atm10/  velocity/  casaos-apps  iptables-rules.v4
-  ansible/                   host configuration (IaC phase 2; see docs/design/IAC-DESIGN.md)
+  ansible/                   host configuration: the source of truth for everything it manages
     site.yml                 the playbook; roles/ holds one role per service
+  secrets/                   SOPS-encrypted values (tunnel token, forwarding secret)
+  scripts/
+    mc-status-ping.py        Minecraft status-ping tester (see RUNBOOK)
+    check-sops-encrypted.sh  used by pre-commit and CI
+    obsolete/                superseded scripts (the roles replaced them), kept for reference
+  config/                    local-only symlinks to live files not yet managed (ATM10, CasaOS)
   .github/workflows/ci.yml   CI: lint, Ansible checks, secret scanning (never deploys)
   .sops.yaml                 who can decrypt files in secrets/
   .pre-commit-config.yaml    the same checks, run locally before each commit
 ```
 
-The symlinks (`velocity/`, `config/`, `scripts/firewall-velocity-tcpshield.sh`)
-are **local only** and gitignored: they point outside the repo, and `velocity/`
-holds the forwarding secret. They go away as the IaC phases replace them with
-real files.
+`config/` is local only and gitignored: it links to live files that no role
+manages yet (ATM10's config, CasaOS's compose files). Each link goes away when
+its phase moves that config into the repo.
 
-## Why some things are symlinks, not moved
+## Changing something that a role manages
 
-`velocity.service` and `velocity-firewall.service` are installed in
-`/etc/systemd/system` and point at the **current** paths
-(`~/projects/active/velocity/` and `~/projects/active/firewall-velocity-tcpshield.sh`).
-Moving those files would break boot-time startup. They are linked in here
-instead. To relocate them for real, move the files, edit the unit files in
-`systemd/`, then `sudo cp` them over and `sudo systemctl daemon-reload`.
-
-The files under `config/` are links to the live files, so editing through
-either path edits the same file. Files under `/var/lib/casaos/apps/` are
+Velocity, the TCPShield firewall, cloudflared, Docker's daemon config, SSH and
+the NVIDIA toolkit are managed by `ansible/`. Change them in the repo, then
+apply (see docs/current/RUNBOOK.md). Editing the live file by hand works until
+the next run, which puts the repo's version back. Files under `/var/lib/casaos/apps/` are
 root-only, so use `sudo cat` to read them.
 
 ## Rules for this directory

@@ -1,3 +1,6 @@
+velocity_user: velocity
+velocity_java: /usr/lib/jvm/temurin-25-jdk-amd64/bin/java
+
 # Binaries are not in git; the role only verifies them against these checksums.
 velocity_jars:
   - path: velocity.jar  # Velocity 4.2.0

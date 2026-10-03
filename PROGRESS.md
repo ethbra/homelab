@@ -19,6 +19,33 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-02 (late, 3) - failed apply: handler ordering
+- The Velocity/firewall apply failed at "Re-apply firewall" (`203/EXEC`):
+  systemd still had the old firewall unit loaded, which pointed at the script
+  that had just been removed from `/home`. Cause: four roles each defined a
+  handler named `Reload systemd`; Ansible keeps only the last definition, so the
+  reload ran after the restart. Velocity kept running on the old setup and the
+  `TCPSHIELD_MC` rules stayed in place (verified), so nothing was exposed.
+- Fix: restart handlers run `daemon_reload` first; handler names are unique per
+  role; role `retired` renamed to `deprecated`.
+
+### 2026-10-02 (late, 2) - Velocity to /opt, decisions
+- Applied: secrets via SOPS, SSH key-only (tested: key works, password refused),
+  Samba/xrdp/ollama purged, `admin` and `ollama` accounts removed. CI green.
+  `admin`'s home was deleted with the account; it had not been reviewed first
+  (the step's description undersold what the `access` role did).
+- Code (to apply): Velocity moves to `/opt/velocity` under a `velocity` system
+  user with a sandboxed unit that refuses to start unless the TCPShield rule
+  exists; firewall script moves to `/usr/local/sbin`, root-owned (it ran as
+  root from a user-writable path). Old Velocity dir kept as rollback.
+- Deleted the installer's plaintext token copy `~/.cloudflared/tunnel-token`.
+- Repo: removed `systemd/` copies and stale symlinks (roles own those files
+  now); one-time installers moved to `scripts/obsolete/`.
+- Found: ATM10 has been running on Java 25 (container default `java`); it
+  targets Java 21. Owner sets the execution command in Crafty.
+- Decided: storage layout (HDD-only pool at `/DATA`, app data on NVMe, no
+  RAID for now); media apps share one login, Crafty separate.
+
 ### 2026-10-02 (late) - IaC phase 2: decisions, secrets, removals (code only)
 - Root check of the mirror roles: ok=28 changed=0. Phase 2a mirror confirmed.
 - Decided: remove Samba, xrdp and ollama; retire the `admin` login account
@@ -147,6 +174,8 @@ Newest first. Update this whenever something is changed, decided or left open.
 ## Open items / TODO
 
 **Do soon**
+- [ ] Crafty: set ATM10's execution command to `/usr/lib/jvm/java-21-openjdk-amd64/bin/java` (it runs on Java 25 today).
+- [ ] After a week of Velocity running from `/opt/velocity`: delete `~/projects/active/velocity` (rollback copy).
 - [x] Back up both age private keys offline (2026-10-02: password-protected KeePass file, kept on a second PC and a flash drive).
 - [ ] Finish No-IP removal: the `noip-duc` package and unit are already gone (verified 2026-10-02). Remaining: delete the DDNS key/hostnames or change the password in your noip.com account.
 - [ ] **TCPShield backend is a literal IP** (checked 2026-10-02; value deliberately not recorded here), so an ISP address change takes the server offline until it is edited by hand. Spectrum residential, dynamic. Options: accept and watch for it, or use a hostname kept current by a DDNS timer (check first that the backend field accepts one; trade-off: the name would reveal the home IP to anyone who learns it). Decide before IaC phase 4.

@@ -94,7 +94,7 @@ it shares the host's ports directly.
 | Container definitions (ports, mounts, GPU) | `/var/lib/casaos/apps/<app>/docker-compose.yml` (root-only) |
 | Plex compose variables | `/var/lib/casaos/apps/plex-nvidia/.env` |
 | ATM10 world, mods, config | `/DATA/AppData/crafty/servers/<uuid>/` |
-| Velocity | `~/projects/active/velocity/` |
-| Firewall (boot-time) | `firewall-velocity-tcpshield.sh` run by `velocity-firewall.service`; older saved rules in `/etc/iptables/rules.v4` |
+| Velocity | `ansible/roles/velocity` -> `/opt/velocity/` |
+| Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service`; older saved rules in `/etc/iptables/rules.v4` |
 | Tunnel ingress | Cloudflare dashboard (not on disk) |
 | TCPShield backend/domain | TCPShield dashboard (not on disk) |

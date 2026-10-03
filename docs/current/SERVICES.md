@@ -13,7 +13,7 @@ Status as of 2026-10-01. "Managed by" tells you how to restart it (see RUNBOOK).
 |---|---|---|
 | `docker` | container engine | `/etc/docker/daemon.json`: `default-runtime: nvidia` |
 | `casaos*` | CasaOS (gateway on :80, app management, storage) | manages the containers below |
-| `velocity` | Minecraft proxy | runs as `svalbard`; `~/projects/active/velocity/start.sh` |
+| `velocity` | Minecraft proxy | runs as system user `velocity` from `/opt/velocity` (sandboxed unit); managed by the `velocity` role |
 | `velocity-firewall` | oneshot: applies the TCPShield firewall rules at boot | `Before=velocity.service`; enabled, but was `inactive` on 2026-10-01 (not yet started this boot) |
 | `iptables` (netfilter-persistent) | restores `/etc/iptables/rules.v4` at early boot | saved 2026-09-18; still contains the *old* Docker-based 25565 rules |
 | `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress set in the Cloudflare dashboard |
@@ -63,7 +63,7 @@ linked from `config/atm10/`):
 
 Mods added by us: `proxy-compatible-forge-1.3.1.jar`.
 
-### Velocity proxy (`~/projects/active/velocity/`)
+### Velocity proxy (`/opt/velocity/`, managed by `ansible/roles/velocity`)
 
 | File | Purpose |
 |---|---|
@@ -74,7 +74,7 @@ Mods added by us: `proxy-compatible-forge-1.3.1.jar`.
 | `server-icon.png` | copied from ATM10, shown in the server list |
 | `plugins/TCPShield-2.8.1.jar` | RealIP (works as the Velocity plugin) |
 | `plugins/tcpshield/config.toml` | `only-allow-proxy-connections = true` |
-| `logs/latest.log`, `velocity.log` | proxy logs |
+| (journal) | proxy output: `journalctl -u velocity` |
 
 ## Versions to watch
 

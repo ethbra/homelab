@@ -1,22 +1,27 @@
+# Root-owned and outside /home: it runs as root at boot, so nothing an
+# unprivileged user can write may be on its path.
 - name: TCPShield firewall script
   ansible.builtin.template:
     src: firewall-velocity-tcpshield.sh.j2
     dest: "{{ firewall_script }}"
-    owner: "{{ admin_user }}"
-    group: "{{ admin_user }}"
+    owner: root
+    group: root
     mode: "0755"
   notify: Re-apply firewall
 
 - name: TCPShield firewall unit
-  ansible.builtin.copy:
-    src: velocity-firewall.service
+  ansible.builtin.template:
+    src: velocity-firewall.service.j2
     dest: /etc/systemd/system/velocity-firewall.service
     owner: root
     group: root
     mode: "0644"
-  notify:
-    - Reload systemd
-    - Re-apply firewall
+  notify: Re-apply firewall
+
+- name: Legacy firewall script in the home directory is removed
+  ansible.builtin.file:
+    path: "{{ firewall_legacy_script }}"
+    state: absent
 
 - name: TCPShield firewall enabled and applied
   ansible.builtin.systemd_service:

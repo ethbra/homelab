@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Velocity Minecraft Proxy
+After=network-online.target docker.service velocity-firewall.service
+Wants=network-online.target docker.service velocity-firewall.service
+
+[Service]
+Type=simple
+User={{ velocity_user }}
+Group={{ velocity_user }}
+WorkingDirectory={{ velocity_dir }}
+# Fail closed: refuse to open the public port unless the TCPShield filter is in place.
+# The "+" runs only this check with full privileges.
+ExecStartPre=+/usr/sbin/iptables -C INPUT -p tcp -d {{ lan_ip }} --dport {{ minecraft_port }} -j TCPSHIELD_MC
+ExecStart={{ velocity_dir }}/start.sh
+Restart=on-failure
+RestartSec=5
+# Output goes to the journal: journalctl -u velocity
+
+# Sandbox: Velocity may only write to its own directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ velocity_dir }}
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

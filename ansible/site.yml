@@ -20,5 +20,5 @@
       tags: [velocity]
     - role: access
       tags: [access]
-    - role: retired
-      tags: [retired]
+    - role: deprecated
+      tags: [deprecated]

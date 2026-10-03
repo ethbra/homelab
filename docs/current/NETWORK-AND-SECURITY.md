@@ -86,7 +86,8 @@ players suddenly can't join with a PCF "not approved" style error, re-check it:
 
 ## Firewall
 
-Live script: `scripts/firewall-velocity-tcpshield.sh`, run at boot by
+Live script: `/usr/local/sbin/homelab-tcpshield-firewall` (root-owned, from the
+`firewall` role), run at boot by
 `velocity-firewall.service` (ordered before `velocity.service`).
 
 What it does (idempotent):
@@ -116,8 +117,8 @@ Saved rules at `/etc/iptables/rules.v4` (saved 2026-09-18, restored at boot by
 
 | Secret | Location | Notes |
 |---|---|---|
-| Velocity forwarding secret | `velocity/forwarding.secret` **and** `proxy-compatible-forge.toml` in the ATM10 config | must match; rotate both together, restart both |
-| Cloudflare tunnel token | `/etc/cloudflared/token` (used by the service) and `~/.cloudflared/tunnel-token` (installer input) | it was printed into a Claude session transcript during setup; consider rotating in the Cloudflare dashboard |
+| Velocity forwarding secret | `secrets/svalbard.yaml` (SOPS) -> `/opt/velocity/forwarding.secret` (0600) **and** `proxy-compatible-forge.toml` in the ATM10 config | must match; rotate both together, restart both |
+| Cloudflare tunnel token | `secrets/svalbard.yaml` (SOPS) -> `/etc/cloudflared/token` (0600, from the `cloudflared` role). The installer's plaintext copy in `~/.cloudflared/` was deleted 2026-10-02 | it was printed into a Claude session transcript during setup; rotate it in the Cloudflare dashboard, then `sops secrets/svalbard.yaml` |
 | Crafty admin login | initial password was written to `/DATA/AppData/crafty/config/default-creds.txt` | verify it was changed, then delete that file |
 | ~~No-IP DDNS login~~ | removed 2026-10-01 (script, source, trash and shell-history lines deleted) | the password appeared in a session transcript: **delete the DDNS key/hostnames or change the password in your noip.com account** |
 | Plex claim / token | inside the Plex config (`Preferences.xml`) | |

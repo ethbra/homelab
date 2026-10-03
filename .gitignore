@@ -1,7 +1,5 @@
-# Local-only symlinks to live files outside the repo (velocity/ holds a secret).
-/velocity
+# Local-only symlinks to live files outside the repo (ATM10 and CasaOS config).
 /config/
-/scripts/firewall-velocity-tcpshield.sh
 
 # Keys and decrypted secrets never enter git.
 *.agekey
