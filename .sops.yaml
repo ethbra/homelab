@@ -1,0 +1,9 @@
+# Files under secrets/ are encrypted to every recipient listed here.
+# Public keys only; the matching private keys never enter the repo.
+#   1. admin: ~/.config/sops/age/keys.txt  (edits secrets)
+#   2. host:  /etc/homelab/age.key         (root-only; the pull agent decrypts with it)
+creation_rules:
+  - path_regex: secrets/.*\.(ya?ml|json|env)$
+    age: >-
+      age1yh0g5u822agnrwas68p5skx6nxmnxevw38yx2ucp90eamnqkapzszytrv7,
+      age1d22jdhrt7uctx8cvpur3vtgrfqjateh58ep8aa7jqe6ku7nrh4zs4qwshn

@@ -1,0 +1,34 @@
+# Install once: pipx install pre-commit && pre-commit install
+# Revs are pinned to commit SHAs (tags can be moved); the tag is in the comment.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: ^secrets/
+      - id: trailing-whitespace
+        exclude: ^secrets/
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/adrienverge/yamllint
+    rev: cba56bcde1fdd01c1deb3f945e69764c291a6530  # frozen: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [--strict]
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: 99470f5e12208ff0fb17ab81c3c494f7620a1d8d  # frozen: v0.11.0
+    hooks:
+      - id: shellcheck
+        exclude: ^scripts/obsolete/
+  - repo: local
+    hooks:
+      - id: sops-encrypted
+        name: secrets/ files are SOPS-encrypted
+        entry: scripts/check-sops-encrypted.sh
+        language: script
+        files: ^secrets/

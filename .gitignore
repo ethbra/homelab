@@ -1,0 +1,25 @@
+# Local-only symlinks to live files outside the repo (velocity/ holds a secret).
+/velocity
+/config/
+/scripts/firewall-velocity-tcpshield.sh
+
+# Keys and decrypted secrets never enter git.
+*.agekey
+age.key
+keys.txt
+*.dec
+*.dec.*
+*.decrypted*
+.env
+.env.*
+
+# OpenTofu: state can contain secrets; it is stored encrypted outside git.
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Tooling
+.ansible/
+*.retry
+__pycache__/

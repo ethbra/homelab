@@ -1,0 +1,118 @@
+# Progress
+
+Newest first. Update this whenever something is changed, decided or left open.
+
+## Status board (2026-10-01)
+
+| Area | State |
+|---|---|
+| GPU in Docker (NVIDIA toolkit, default runtime) | done |
+| Plex in container, library migrated, same server identity | done |
+| Plex hardware transcoding confirmed (`(hw)` in dashboard) | **not yet verified** |
+| Native Plex removed | **pending** (stopped + disabled, still installed) |
+| ATM10 behind Velocity + TCPShield, real IPs in logs | done, joins work |
+| Velocity as a systemd service | done |
+| TCPShield firewall (`TCPSHIELD_MC`) | unit installed + **enabled for boot**, but `inactive` this boot (never started via systemd). Live rules exist only if the script was also run by hand: **verify**, or just `sudo systemctl start velocity-firewall` (safe to repeat) |
+| ATM10 log spam from Crafty's ping | open (cosmetic) |
+| Docs (this directory) | done 2026-10-01 |
+| Infrastructure as code | phase 1 in progress (see docs/design/IAC-DESIGN.md) |
+
+## Log
+
+### 2026-10-02 - IaC phase 1 scaffold
+- Decided: the repo will own all config (pull model: the server fetches and
+  applies signed commits; GitHub only validates). CasaOS will be retired.
+  Design in `docs/design/IAC-DESIGN.md`.
+- Found: `/DATA` (mergerfs) is mounted by `casaos-local-storage`, not fstab,
+  and ~175 GB of it lives in `/var/lib/casaos/files`. CasaOS must be removed
+  last, never with `casaos-uninstall` (prompts default to deleting all
+  containers and `/DATA/AppData`).
+- Moved the existing docs to `docs/current/` with a "current state" banner;
+  links updated. Redacted the home WAN IP from NETWORK-AND-SECURITY.
+- `git init` (no commits yet). Symlinks `velocity/`, `config/` and the firewall
+  script link are gitignored (they point outside the repo; one holds a secret).
+- Added `.sops.yaml` (placeholder recipients), `.yamllint.yaml`,
+  `.pre-commit-config.yaml`, CI (`yamllint`, `shellcheck`, gitleaks on full
+  history, SOPS check), `scripts/check-sops-encrypted.sh`, `secrets/README.md`.
+  Verified locally: yamllint, shellcheck, gitleaks clean.
+- `install-cloudflared.sh`: `mkdir -p --mode` -> `install -d -m` (shellcheck SC2174).
+
+### 2026-10-01 (later) - cleanup
+- **No-IP removed:** deleted `archive/noip-duc_3.3.0/`, `archive/startup/run.sh`
+  (plaintext credentials), the trashed tarball and 21 matching lines from
+  `~/.bash_history`. The `noip-duc` service was already disabled and
+  `all.ddnskey.com` no longer pointed at this machine. Still to do: `sudo apt purge noip-duc`
+  and clean up the noip.com account. (`~/Desktop/Things to do.txt` still mentions
+  it in a to-do line; left alone.)
+- **apache2 on :42683 explained and closed:** GNOME file sharing
+  (`gnome-user-share-webdav`), WebDAV of an empty `~/Public` with no password.
+  Stopped and masked; package kept on purpose (see NETWORK-AND-SECURITY risk 5).
+- **Router:** owner confirmed the only static forward is TCP 25565 ->
+  192.168.1.22:25565. Found that UPnP/NAT-PMP is additionally opening Plex
+  (WAN 17511) and Transmission (51413).
+
+### 2026-10-01 - ATM10 behind Velocity, docs
+- Added **Velocity 4.2.0** at `~/projects/active/velocity/` with the TCPShield
+  RealIP plugin; installed `velocity.service`; wrote `start.sh`.
+- Crafty compose: published ATM10 on `127.0.0.1:25565` only
+  (`host_ip: "127.0.0.1"`); recreated `crafty-container`.
+- Velocity binds `192.168.1.22:25565` (wildcard bind collided with Docker).
+- Installed **Proxy Compatible Forge 1.3.1** on ATM10 with the shared forwarding
+  secret and `approvedProxyHosts = ["172.18.0.1"]`; removed NeoVelocity (it had
+  been added first and conflicted).
+- ATM10 `online-mode=false`.
+- Raised Velocity packet limits (`max-plugin-message-payload-size.clientbound`,
+  `max-known-packs`) after the 448-mod sync packet (1.83 MB) exceeded the default.
+- First successful join through TCPShield; ATM10 logs the real player IP.
+- Server list: passthrough disabled (the compatibility mod appends a stray
+  packet Velocity rejects); MOTD/icon/cap set in Velocity.
+- Wrote `firewall-velocity-tcpshield.sh` + `velocity-firewall.service`
+  (unit is installed; **verify the live rules**).
+- Tried a log4j filter to hide Crafty's ping noise: rules verified in isolation
+  but the running server doesn't apply `-Dlog4j2.configurationFile`. Cause
+  unknown (couldn't read the live JVM properties). Left in place, harmless.
+- Created this `homelab/` hub and docs.
+- ATM10 is **All the Mods 10 v4.12** (MC 1.21.1, NeoForge 21.1.209).
+
+### 2026-09-25 to 09-30 - GPU and Plex
+- Fixed two bugs in `install-nvidia-container-toolkit.sh` (`curl -fsSL`,
+  `gpg --dearmor --yes`); installed the toolkit from NVIDIA's apt repo
+  (signed-by keyring); set `nvidia` as Docker's default runtime.
+- Plex compose (CasaOS `plex-nvidia`): removed the nonexistent `/dev/dvb`
+  device, added `.env`, changed the media mount target to `/DATA/Media`.
+- Found two Plex installs fighting over port 32400 (native + container, host
+  network). The real library was the native one; migrated its full config into
+  the container (`cp -a`, owner 911:911). Server identity and claim preserved.
+- Found Plex needs https for non-local clients.
+
+## Open items / TODO
+
+**Do soon**
+- [ ] Finish No-IP removal: `sudo apt purge noip-duc` (package + disabled unit still installed), and delete the DDNS key/hostnames or change the password in your noip.com account.
+- [ ] Find out how the TCPShield backend is set (IP vs hostname). With no DDNS, an ISP IP change takes the server offline.
+- [ ] Apply + verify the firewall: `sudo systemctl start velocity-firewall`, then `sudo iptables -L TCPSHIELD_MC -n` and `sudo iptables -S INPUT | grep TCPSHIELD`. (Until then Velocity relies only on RealIP's application-level check.)
+- [ ] Reserve `192.168.1.22` for this machine in the router.
+- [ ] Confirm Plex hardware transcode works, then `sudo apt purge plexmediaserver`.
+
+**Soon-ish**
+- [ ] Rotate the Cloudflare tunnel token (it was printed into a session transcript).
+- [ ] Confirm the Crafty admin password was changed; delete `default-creds.txt`.
+- [ ] Verify SSH is key-only, no root login; decide on xrdp exposure.
+- [ ] Bump the Plex image to >= the version that wrote the migrated database (1.42.2).
+- [ ] `sudo netfilter-persistent save` once the firewall is verified, so `rules.v4` matches reality.
+
+**Future features**
+- [ ] **Storage hosting / remote file access.** Design properly later (the GNOME WebDAV share was an unfinished start and is now off). Needs: auth, encryption in transit, how it's reached from outside (Cloudflare Tunnel vs VPN), and which folders are exposed.
+- [ ] **Infrastructure as code repo** (see the IaC discussion of 2026-10-01).
+
+**Nice to have**
+- [ ] Silence Crafty's ping noise in the ATM10 log (needs the log4j property to actually load, or a PCF-side option).
+- [ ] Decide what to do with the unused Crafty servers (rlcraft, Vanilla, Plugins Test): all share `127.0.0.1:25565`.
+- [ ] Remove leftover `/DATA/AppData/ollama-nvidia` and `open-webui-ollama` if unused.
+- [ ] Put `homelab/` under git: `git init` + `.gitignore` done 2026-10-02; first signed commit pending (IaC phase 1).
+- [ ] Document the Cloudflare tunnel's public hostnames here once checked in the dashboard.
+- [ ] Check that Crafty's dashboard still shows ATM10 stats (player count/version) after the next restart.
+
+## Not covered here
+- `~/projects/active/neet2neat` (separate project, own `PROGRESS.md`)
+- `~/projects/archive/*` (now only MCChecker)
