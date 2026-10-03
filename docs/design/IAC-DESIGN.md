@@ -133,8 +133,10 @@ SSH signing (no GPG needed):
 ## GitHub repository settings
 
 - 2FA on the account.
-- Branch protection on `main`: require signed commits, require the `ci`
-  checks, block force-pushes and deletion.
+- Ruleset on `main`: require signed commits, block force-pushes and deletion.
+  *Not* "require status checks": that would also block the direct signed
+  pushes this workflow relies on. The green-CI gate belongs in the pull agent
+  instead (see "Optional, later" above).
 - Actions: GitHub-hosted runners only; workflow permissions read-only;
   actions pinned to commit SHAs.
 - Public is fine once phase 1's checks pass on the full history.
