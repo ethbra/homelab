@@ -97,21 +97,21 @@ What it does (idempotent):
 - fetches TCPShield's live range list, falling back to the two known ranges
 - loopback traffic is unaffected (the hook matches only the LAN destination IP)
 
-Saved rules at `/etc/iptables/rules.v4` (saved 2026-09-18, restored at boot by
-`iptables.service`) still contain:
-- the **old** `DOCKER-USER` TCPShield rules for 25565 (the new script removes
-  them after boot; harmless to leave)
-- `raw` table drops for **45.148.10.134** and **4.180.183.240** (blocked at some
-  point; reason not recorded; keep unless you know otherwise)
-- Docker's own container-isolation rules
-- default policies: `INPUT ACCEPT`, `FORWARD DROP`
+The same script also drops all traffic from **45.148.10.134** and
+**4.180.183.240** in the `raw` table (`firewall_blocked_sources` in host_vars;
+reason not recorded, carried over from the old saved rules).
+
+`/etc/iptables/rules.v4` and `iptables-persistent` are retired by the
+`deprecated` role (2026-10-03): the snapshot dated from the Docker-published
+ATM10 era and re-added stale rules at boot. Docker writes its own rules (and
+sets `FORWARD DROP`); `velocity-firewall` writes the rest at every boot.
 
 > **Status 2026-10-02:** verified live. `velocity-firewall` ran with result
 > `success`, `TCPSHIELD_MC` holds the two TCPShield ranges plus a final DROP,
 > and `INPUT` hooks it for `-d 192.168.1.22 -p tcp --dport 25565`. Re-check with
 > `sudo iptables -L TCPSHIELD_MC -n` and `sudo iptables -S INPUT | grep TCPSHIELD`.
 > `netfilter-persistent save` is not needed: the unit re-applies the chain at
-> every boot, and the IaC firewall role will replace `rules.v4`.
+> every boot.
 
 ## Secrets: where they live (values are never written here)
 

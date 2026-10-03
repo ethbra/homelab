@@ -16,6 +16,9 @@
 set -euo pipefail
 
 [[ $EUID -eq 0 ]] || { echo "run as root (sudo)" >&2; exit 1; }
+for tool in rsync comm cmp; do
+  command -v "$tool" >/dev/null || { echo "missing required tool: $tool (apt install rsync)" >&2; exit 1; }
+done
 
 NVME_BRANCH=/var/lib/casaos/files
 APPDATA_SRC=/DATA/AppData

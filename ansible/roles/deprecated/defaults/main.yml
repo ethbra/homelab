@@ -13,6 +13,12 @@ deprecated_packages:
   # Remote desktop: replaced by SSH + VS Code.
   - xrdp
   - xorgxrdp
+  # Boot-time restore of a rules snapshot taken while ATM10 was still published
+  # through Docker. It re-adds stale Docker rules at every boot; Docker writes its
+  # own, and the firewall role owns the rest (its two raw drops moved there).
+  # FLUSH_ON_STOP=0, so purging leaves the running rules alone.
+  - iptables-persistent
+  - netfilter-persistent
 
 # Ollama was installed with its upstream script, not apt.
 # Its data under /DATA/AppData (ollama-nvidia, open-webui-ollama) is kept.
@@ -21,3 +27,17 @@ deprecated_ollama_paths:
   - /usr/local/bin/ollama
   - /usr/local/lib/ollama
   - /usr/share/ollama
+
+# Left-over files, removed on purpose.
+deprecated_paths:
+  # Upstream's auto-updater from `cloudflared service install`; apt and
+  # unattended-upgrades (base role) keep cloudflared current instead.
+  - /etc/systemd/system/cloudflared-update.timer
+  - /etc/systemd/system/cloudflared-update.service
+  # Native Plex is gone; the repo line was already commented out.
+  - /etc/apt/sources.list.d/plexmediaserver.list
+  - /usr/share/keyrings/plexmediaserver.gpg
+  # Copy of the Debian sources; apt ignores *.bak, but it misleads readers.
+  - /etc/apt/sources.list.d/nonfree.list.bak
+  # Not a package file (see dpkg -L), so it is removed explicitly.
+  - /etc/iptables/rules.v4

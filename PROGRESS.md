@@ -15,9 +15,38 @@ Newest first. Update this whenever something is changed, decided or left open.
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phases 1, 2a done; 2b done except cleanup; phase 3 storage pre-seed running overnight 2026-10-02. **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 storage pre-seed done 2026-10-03. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-03 - pre-seed done, cleanup roles written
+- Storage pre-seed finished OK (00:18): ~15.7 GB app data to `/srv/appdata`,
+  Downloads 113 GB -> HDD_A, Media 63 GB -> HDD_B (Documents/Gallery empty).
+  Verification: 0 files differ for the four data folders; 28 app-data files
+  changed afterwards (expected, apps were running). HDD_A 21% used, HDD_B 16%.
+- Cleanup (NEXT-STEPS step 1), code only, verified with `--check`:
+  - new `base` role: `rsync` (installed by hand for the pre-seed),
+    `unattended-upgrades` for Debian security + cloudflared, no auto-reboot
+  - `firewall` role: the two `raw` drops from `rules.v4` moved into the managed
+    script (`firewall_blocked_sources`)
+  - `deprecated` role: purges `iptables-persistent`/`netfilter-persistent`,
+    removes `rules.v4`, the `cloudflared-update` timer, the Plex apt source +
+    key, `nonfree.list.bak`
+- Docker images not used by any container (2026-10-03), for the owner to prune:
+  `vcclient:latest` (13 GB, possibly a local build: not re-pullable) and
+  `dannadori/vcclient:20230826_211406` (12.9 GB); superseded app versions
+  (crafty-4 4.4.11/4.4.4, overseerr 1.33.2, radarr 6.1.1/5.26.2/5.7.0,
+  prowlarr 2.3.5/1.37.0/1.32.2, plex 1.41.3, transmission 4.0.4);
+  `nginx:latest`, `ubuntu:latest`, `python:3.12-slim`. Keep:
+  `koalaman/shellcheck:v0.11.0` (pre-commit hook), `nvidia/cuda` (GPU test).
+- Applied (owner, 15:22): `--check` afterwards shows changed=0; firewall
+  re-ran OK, velocity/cloudflared active, `cloudflared-update` gone. Owner ran
+  `apt autoremove --purge` and removed both `vcclient` images (a voice-changer
+  POC; can be rebuilt if wanted). Removed the `web` network: hand-made
+  (2025-10-13, no compose labels), its only endpoint was sonarr, attached by
+  hand on top of `network_mode: bridge`; disconnected. Left: the other old images.
+- SERVICES.md had stale rows (ollama, xrdp, Samba, native Plex, noip, all gone);
+  refreshed.
 
 ### 2026-10-02 (night) - Velocity move applied, storage pre-seed, next steps
 - Velocity now runs from `/opt/velocity` as user `velocity` (sandboxed unit,

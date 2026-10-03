@@ -1,0 +1,5 @@
+# Tools the repo's own scripts rely on (scripts/storage-preseed.sh needs rsync).
+base_packages:
+  - rsync
+  - unattended-upgrades
+  - apt-listchanges

@@ -11,6 +11,7 @@ PORT={{ minecraft_port }}
 BIND_IP={{ lan_ip }}                 # must match `bind` in velocity.toml
 CHAIN=TCPSHIELD_MC
 FALLBACK_RANGES=({{ tcpshield_fallback_ranges | join(" ") }})
+BLOCKED_SOURCES=({{ firewall_blocked_sources | join(" ") }})
 
 if [[ $EUID -ne 0 ]]; then
   echo "Error: run with sudo" >&2
@@ -51,6 +52,13 @@ iptables -A "$CHAIN" -j DROP
 if ! iptables -C INPUT -p tcp -d "$BIND_IP" --dport "$PORT" -j "$CHAIN" 2>/dev/null; then
   iptables -I INPUT 1 -p tcp -d "$BIND_IP" --dport "$PORT" -j "$CHAIN"
 fi
+
+# Hosts dropped outright, before conntrack (moved here from the old rules.v4)
+for src in "${BLOCKED_SOURCES[@]}"; do
+  if ! iptables -t raw -C PREROUTING -s "$src" -j DROP 2>/dev/null; then
+    iptables -t raw -I PREROUTING 1 -s "$src" -j DROP
+  fi
+done
 
 echo "Done. Allowed sources for $BIND_IP:$PORT:"
 printf '  %s\n' "${RANGES[@]}"

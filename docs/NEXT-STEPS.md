@@ -4,7 +4,7 @@ Where the infrastructure-as-code work stands and what comes next, in order.
 The design is in [design/IAC-DESIGN.md](design/IAC-DESIGN.md); the history is in
 [../PROGRESS.md](../PROGRESS.md). Update this file whenever a step is done.
 
-Last updated: 2026-10-02 (night).
+Last updated: 2026-10-03.
 
 ## Where we are
 
@@ -12,42 +12,47 @@ Last updated: 2026-10-02 (night).
 |---|---|
 | 1. Repo, CI, SOPS, signed commits | done |
 | 2a. Roles that mirror the live host | done |
-| 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Left: cleanup (step 1 below) |
-| 3. Storage + containers out of CasaOS | pre-seed copy running overnight 2026-10-02 (step 0) |
+| 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
+| 3. Storage + containers out of CasaOS | pre-seed copy done 2026-10-03; next: step 2 |
 | 4. Pull agent, drift check, Cloudflare in OpenTofu | not started |
 
-## 0. Overnight: storage pre-seed (owner, 2026-10-02)
+## 0. Storage pre-seed: done 2026-10-03
 
-`scripts/storage-preseed.sh` copies data to its new locations while everything
-keeps running. Copy-only: nothing at the source changes.
+`scripts/storage-preseed.sh` finished OK at 00:18: app data to `/srv/appdata`,
+NVMe-branch data to the hard drives, all four data folders verified identical.
+Re-running it later copies only what changed (that is cutover step 3.2).
 
-- App data `/DATA/AppData/<app>` -> `/srv/appdata/<app>` (~15 GB; Crafty's
-  backups stay on HDD_A, ollama/open-webui and the stray `config/` are skipped)
-- NVMe-branch data -> hard drives, same relative paths (~165 GB):
-  `Downloads` -> HDD_A, `Media` -> HDD_B, `Documents`/`Gallery` -> HDD_A
+## 1. Cleanup: done 2026-10-03
 
-Check the result in the morning:
+Written and checked (`--check` shows only these changes):
+
+- `base` role: `rsync`, `unattended-upgrades` (Debian security + cloudflared,
+  no automatic reboot)
+- `firewall` role: the two `raw` drops (45.148.10.134, 4.180.183.240) now come
+  from the managed script
+- `deprecated` role: purge `iptables-persistent`/`netfilter-persistent`, remove
+  `/etc/iptables/rules.v4`, the `cloudflared-update` timer, the Plex apt
+  source + key, `nonfree.list.bak`
+
+Apply and verify:
 
 ```bash
-journalctl -u homelab-preseed --no-pager | tail -30   # or: sudo tail -40 /var/log/homelab-preseed.log
+cd ~/projects/active/homelab/ansible
+ansible-playbook site.yml -K --tags base,firewall,deprecated
+sudo iptables -t raw -S PREROUTING | grep -E '45.148.10.134|4.180.183.240'  # each once
+sudo iptables -L TCPSHIELD_MC -n                                            # unchanged
+systemctl is-active velocity-firewall velocity cloudflared
+systemctl list-timers --all | grep -c cloudflared-update                     # 0
+sudo unattended-upgrade --dry-run --debug 2>&1 | grep -i 'allowed origins'
 ```
 
-Good: it ends with `pre-seed finished OK`, and the verification lines show only
-a handful of changed app-data files. If it says `ABORT`, nothing was
-overwritten; bring the log to the next session.
+One-off, by hand (not role-managed state):
 
-## 1. Cleanup commit (low risk)
-
-- `unattended-upgrades` for automatic security updates (the one real gap left
-  on the host), in a new `base` role
-- Retire `/etc/iptables/rules.v4` (still restores Docker-era rules at boot);
-  move its two `raw` drops (45.148.10.134, 4.180.183.240) into the managed
-  firewall
-- Remove: `cloudflared-update` timer, `plexmediaserver.list` and
-  `nonfree.list.bak` apt sources, the 31 orphaned packages from the Samba
-  purge (`apt autoremove`, list reviewed first)
-- Docker: remove the unused `web` network and unused images (~45 GB; list
-  each one for review before removing)
+- [x] `sudo apt autoremove --purge` (2026-10-03)
+- [x] `vcclient` images removed (2026-10-03)
+- [x] Docker `web` network removed (2026-10-03)
+- [ ] Docker: remove the other unused images (optional; list in PROGRESS
+  2026-10-03)
 
 ## 2. Prepare the cutover (code only, no downtime)
 

@@ -95,6 +95,6 @@ it shares the host's ports directly.
 | Plex compose variables | `/var/lib/casaos/apps/plex-nvidia/.env` |
 | ATM10 world, mods, config | `/DATA/AppData/crafty/servers/<uuid>/` |
 | Velocity | `ansible/roles/velocity` -> `/opt/velocity/` |
-| Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service`; older saved rules in `/etc/iptables/rules.v4` |
+| Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service` (TCPShield chain + `raw` blocklist) |
 | Tunnel ingress | Cloudflare dashboard (not on disk) |
 | TCPShield backend/domain | TCPShield dashboard (not on disk) |

@@ -32,3 +32,22 @@
   ansible.builtin.group:
     name: ollama
     state: absent
+
+- name: Check for the cloudflared-update timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/cloudflared-update.timer
+  register: deprecated_cloudflared_update_timer
+
+- name: Cloudflared-update timer is stopped and disabled
+  ansible.builtin.systemd_service:
+    name: cloudflared-update.timer
+    state: stopped
+    enabled: false
+  when: deprecated_cloudflared_update_timer.stat.exists
+
+- name: Left-over files are removed
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ deprecated_paths }}"
+  notify: Reload systemd (deprecated)

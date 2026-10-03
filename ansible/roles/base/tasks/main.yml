@@ -1,0 +1,31 @@
+- name: Base packages
+  ansible.builtin.apt:
+    name: "{{ base_packages }}"
+    state: present
+
+# Turns on the daily apt-daily-upgrade run. Debian's own
+# 50unattended-upgrades already limits it to bookworm-security.
+- name: Automatic updates enabled
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+
+# cloudflared is internet-facing and its repo only carries the current release,
+# so it updates too. This replaces the old cloudflared-update timer.
+# Lists in apt config accumulate across files, so this adds to Debian's origins.
+# No automatic reboots: a kernel update waits for a manual reboot.
+- name: Unattended-upgrades origins for this host
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/52homelab-unattended-upgrades
+    content: |
+      Unattended-Upgrade::Origins-Pattern {
+              "origin=cloudflared,label=cloudflared";
+      };
+    owner: root
+    group: root
+    mode: "0644"

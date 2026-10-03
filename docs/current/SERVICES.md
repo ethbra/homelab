@@ -14,13 +14,10 @@ Status as of 2026-10-01. "Managed by" tells you how to restart it (see RUNBOOK).
 | `docker` | container engine | `/etc/docker/daemon.json`: `default-runtime: nvidia` |
 | `casaos*` | CasaOS (gateway on :80, app management, storage) | manages the containers below |
 | `velocity` | Minecraft proxy | runs as system user `velocity` from `/opt/velocity` (sandboxed unit); managed by the `velocity` role |
-| `velocity-firewall` | oneshot: applies the TCPShield firewall rules at boot | `Before=velocity.service`; enabled, but was `inactive` on 2026-10-01 (not yet started this boot) |
-| `iptables` (netfilter-persistent) | restores `/etc/iptables/rules.v4` at early boot | saved 2026-09-18; still contains the *old* Docker-based 25565 rules |
-| `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress set in the Cloudflare dashboard |
-| `ollama` | local LLM server | loopback only, `127.0.0.1:11434` |
-| `sshd`, `xrdp`, `smbd`/`nmbd`, `smartd` | remote access, file sharing, disk health | see NETWORK-AND-SECURITY |
-| `plexmediaserver` | **old native Plex** | stopped + disabled; still installed pending removal |
-| `noip-duc` | No-IP DDNS client | **being removed**: disabled, never running; `sudo apt purge noip-duc` pending |
+| `velocity-firewall` | oneshot: applies the TCPShield firewall rules and the `raw` blocklist at boot | `Before=velocity.service`; managed by the `firewall` role |
+| `unattended-upgrades` (via `apt-daily-upgrade.timer`) | automatic security updates | `base` role: Debian security + cloudflared; no automatic reboot |
+| `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress set in the Cloudflare dashboard; updated by unattended-upgrades |
+| `sshd`, `smartd` | remote access (key-only), disk health | see NETWORK-AND-SECURITY |
 | `gnome-user-share-webdav` (user unit) | GNOME "Personal File Sharing" (shows up as `apache2` on :42683) | **masked**; package intentionally left installed |
 
 ## Containers (CasaOS compose apps)
@@ -39,7 +36,7 @@ Data: `/DATA/AppData/<name>/`.
 | `transmission` | linuxserver/transmission | 9091 (UI), 51413 tcp+udp | |
 
 `/DATA/AppData/ollama-nvidia` and `open-webui-ollama` exist but have no
-running containers (leftovers; Ollama now runs natively).
+running containers (leftovers; Ollama was removed 2026-10-02, data kept).
 
 ## Minecraft
 
