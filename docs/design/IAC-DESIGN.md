@@ -5,7 +5,7 @@
 > updated as each phase below actually lands; [PROGRESS.md](../../PROGRESS.md)
 > records each step.
 
-Status: phase 1 in progress (2026-10-02).
+Status: phase 1 done (2026-10-02); phase 2 next.
 
 ## Goals
 

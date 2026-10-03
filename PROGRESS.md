@@ -15,9 +15,20 @@ Newest first. Update this whenever something is changed, decided or left open.
 | TCPShield firewall (`TCPSHIELD_MC`) | unit installed + **enabled for boot**, but `inactive` this boot (never started via systemd). Live rules exist only if the script was also run by hand: **verify**, or just `sudo systemctl start velocity-firewall` (safe to repeat) |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phase 1 in progress (see docs/design/IAC-DESIGN.md) |
+| Infrastructure as code | phase 1 done 2026-10-02; phase 2 (host baseline) next. See docs/design/IAC-DESIGN.md |
 
 ## Log
+
+### 2026-10-02 (later) - IaC phase 1 done
+- Repo published: https://github.com/ethbra/homelab (public). Both commits
+  signed (SSH key) and shown as Verified; CI green (lint + gitleaks, full history).
+- SOPS round-trip verified with both age keys (admin + host).
+- GitHub settings: ruleset `protect-main` on the default branch (require
+  signed commits, block force-push, block deletion; no bypass actors),
+  workflow token read-only, Actions can't approve PRs, approval required for
+  all outside contributors' workflows, secret scanning + push protection on.
+- Commits are made and signed by the owner only; Claude stages changes.
+- Still to do: back up both age private keys offline.
 
 ### 2026-10-02 - IaC phase 1 scaffold
 - Decided: the repo will own all config (pull model: the server fetches and
@@ -88,6 +99,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 ## Open items / TODO
 
 **Do soon**
+- [ ] Back up both age private keys offline (`~/.config/sops/age/keys.txt`, `/etc/homelab/age.key`). Losing both = losing every encrypted secret.
 - [ ] Finish No-IP removal: `sudo apt purge noip-duc` (package + disabled unit still installed), and delete the DDNS key/hostnames or change the password in your noip.com account.
 - [ ] Find out how the TCPShield backend is set (IP vs hostname). With no DDNS, an ISP IP change takes the server offline.
 - [ ] Apply + verify the firewall: `sudo systemctl start velocity-firewall`, then `sudo iptables -L TCPSHIELD_MC -n` and `sudo iptables -S INPUT | grep TCPSHIELD`. (Until then Velocity relies only on RealIP's application-level check.)
@@ -109,7 +121,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 - [ ] Silence Crafty's ping noise in the ATM10 log (needs the log4j property to actually load, or a PCF-side option).
 - [ ] Decide what to do with the unused Crafty servers (rlcraft, Vanilla, Plugins Test): all share `127.0.0.1:25565`.
 - [ ] Remove leftover `/DATA/AppData/ollama-nvidia` and `open-webui-ollama` if unused.
-- [ ] Put `homelab/` under git: `git init` + `.gitignore` done 2026-10-02; first signed commit pending (IaC phase 1).
+- [x] Put `homelab/` under git (2026-10-02; public at github.com/ethbra/homelab).
 - [ ] Document the Cloudflare tunnel's public hostnames here once checked in the dashboard.
 - [ ] Check that Crafty's dashboard still shows ATM10 stats (player count/version) after the next restart.
 
