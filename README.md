@@ -11,6 +11,7 @@ Last verified: 2026-10-01.
 | I want to...                                  | Read                                                   |
 |-----------------------------------------------|--------------------------------------------------------|
 | See what's done / what's still open           | [PROGRESS.md](PROGRESS.md)                             |
+| Pick up where we left off                     | [docs/NEXT-STEPS.md](docs/NEXT-STEPS.md)               |
 | See where this is heading (infrastructure as code) | [docs/design/IAC-DESIGN.md](docs/design/IAC-DESIGN.md) |
 | Understand how the pieces fit together        | [docs/current/ARCHITECTURE.md](docs/current/ARCHITECTURE.md)           |
 | Find a service, its port, config and data     | [docs/current/SERVICES.md](docs/current/SERVICES.md)                   |
@@ -31,6 +32,7 @@ homelab/
   secrets/                   SOPS-encrypted values (tunnel token, forwarding secret)
   scripts/
     mc-status-ping.py        Minecraft status-ping tester (see RUNBOOK)
+    storage-preseed.sh       storage migration copy pass (see docs/NEXT-STEPS.md)
     check-sops-encrypted.sh  used by pre-commit and CI
     obsolete/                superseded scripts (the roles replaced them), kept for reference
   config/                    local-only symlinks to live files not yet managed (ATM10, CasaOS)

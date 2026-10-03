@@ -15,9 +15,23 @@ Newest first. Update this whenever something is changed, decided or left open.
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phase 1 done; phase 2a (mirror roles) in progress: docker, nvidia_toolkit, cloudflared, firewall, velocity give an empty check-mode diff. See docs/design/IAC-DESIGN.md |
+| Infrastructure as code | phases 1, 2a done; 2b done except cleanup; phase 3 storage pre-seed running overnight 2026-10-02. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-02 (night) - Velocity move applied, storage pre-seed, next steps
+- Velocity now runs from `/opt/velocity` as user `velocity` (sandboxed unit,
+  fail-closed firewall check); firewall script at `/usr/local/sbin`. Verified:
+  both units active, Java process owned by `velocity`, status ping through
+  TCPShield OK (max 50 players), `TCPSHIELD_MC` unchanged. CI green on 7fe8d52.
+- Storage plan sized: app data to move is ~15 GB (Crafty's 67 GB of backups
+  stay on HDD_A); NVMe-branch data to move to the hard drives is ~165 GB; no
+  path collisions between the NVMe branch and either hard drive.
+- Added `scripts/storage-preseed.sh` (copy-only pre-seed, re-runnable) and
+  started it overnight. Added `docs/NEXT-STEPS.md` as the resume point.
+- Rotated the Cloudflare tunnel token (dashboard -> SOPS -> `--tags cloudflared`).
+  cloudflared restarted 23:41 with 4 ready connections (LAX edges). The old
+  token, which had leaked into a session transcript, is invalid.
 
 ### 2026-10-02 (late, 3) - failed apply: handler ordering
 - The Velocity/firewall apply failed at "Re-apply firewall" (`203/EXEC`):
@@ -184,7 +198,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 - [ ] Confirm Plex hardware transcode works (native Plex is already removed).
 
 **Soon-ish**
-- [ ] Rotate the Cloudflare tunnel token (it was printed into a session transcript).
+- [x] Rotate the Cloudflare tunnel token (done 2026-10-02).
 - [x] Crafty admin password changed (custom creds + 2FA); `default-creds.txt` deleted 2026-10-02.
 - [ ] Verify SSH is key-only, no root login; decide on xrdp exposure.
 - [x] ~~Bump the Plex image~~ already on 1.43.4 via `:latest` (2026-10-02); pin a version when the stack moves into the repo.

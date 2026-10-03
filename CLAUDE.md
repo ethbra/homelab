@@ -1,6 +1,7 @@
 # Homelab project notes for Claude
 
-Read `README.md`, then `PROGRESS.md`. Update `PROGRESS.md` after any change.
+Read `README.md`, then `PROGRESS.md`, then `docs/NEXT-STEPS.md` (where we left off).
+Update `PROGRESS.md` after any change, and `docs/NEXT-STEPS.md` when a step is done.
 
 ## Hard rules
 - **Never print or write secret values** (forwarding secret, tunnel token,
