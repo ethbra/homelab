@@ -1,7 +1,7 @@
 # Runbook
 
-> **Current state.** This describes the live server as it runs today (hand-managed
-> and CasaOS). The planned infrastructure-as-code setup is in
+> **Current state.** This describes the live server as it runs today (Ansible
+> roles and `stacks/`; CasaOS was retired 2026-10-03). The planned infrastructure-as-code setup is in
 > [../design/IAC-DESIGN.md](../design/IAC-DESIGN.md). This doc changes only when a migration
 > phase actually lands.
 
@@ -15,31 +15,33 @@ Commands marked `sudo` need your password. Paths are relative to
 | Restart Velocity | `sudo systemctl restart velocity` |
 | Velocity status / log | `systemctl status velocity --no-pager` / `journalctl -u velocity -f` |
 | Restart ATM10 | **Crafty web UI** (https://192.168.1.22:8111). Don't kill the Java process by hand; Crafty loses track of it |
-| ATM10 log | `tail -f /DATA/AppData/crafty/servers/1472e5eb-3e4d-4ce7-b2ac-723f83803f19/logs/latest.log` |
+| ATM10 log | `tail -f /srv/appdata/crafty/servers/1472e5eb-3e4d-4ce7-b2ac-723f83803f19/logs/latest.log` |
 | Re-apply the firewall now | `sudo systemctl restart velocity-firewall` |
 | Containers at a glance | `docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'` |
 | Who connected, with what IP? | `grep "logged in with entity" <ATM10 latest.log>` (should show the **player's** IP) and `grep "has connected" velocity/logs/latest.log` |
 
-## Changing a container's config (CasaOS apps)
+## Changing a container's config
+
+Containers are defined in `stacks/<app>/compose.yaml`. Edit there, never in
+`/opt/homelab/stacks` (the next run puts the repo's version back):
 
 ```
-sudo cat /var/lib/casaos/apps/<app>/docker-compose.yml     # read
-sudo nano /var/lib/casaos/apps/<app>/docker-compose.yml    # edit
-cd /var/lib/casaos/apps/<app> && sudo docker compose up -d --force-recreate
+nano stacks/<app>/compose.yaml
+cd ansible && ansible-playbook site.yml --check --diff -K --tags stacks   # review
+ansible-playbook site.yml -K --tags stacks                                # recreates changed stacks
 docker inspect <container> --format '{{json .HostConfig.PortBindings}}'   # verify
 ```
+Then commit and push. Secrets for a stack go in SOPS and `stacks_env`
+(`ansible/roles/stacks/defaults/main.yml`), rendered into a root-only `.env`.
 
 Gotchas learned the hard way:
 - **A restart does not pick up runtime, mount or port changes.** Docker pins
-  these when the container is *created*. Use `--force-recreate`.
-- **The CasaOS dashboard's restart button didn't pick up edits** to the compose
-  file. Use the command above.
-- Running compose by hand skips the variables CasaOS normally injects. Plex
-  needs `/var/lib/casaos/apps/plex-nvidia/.env` (`AppID=plex-nvidia`,
-  `PUID=911`, `PGID=911`) or its config mount silently resolves to the wrong
-  folder (`/DATA/AppData/config`).
+  these when the container is *created*; the stacks role recreates a stack
+  whose compose file changed.
 - A `devices:` entry for hardware that isn't present (e.g. `/dev/dvb`) stops the
   container from being created at all.
+- `/DATA` must be mounted for Docker to start (`RequiresMountsFor=/DATA`).
+  Unmounting it by hand can stop Docker.
 
 ## Verify the Minecraft chain end to end
 
@@ -109,6 +111,9 @@ the script, restart Velocity. Better: reserve the IP in your router.
 | Edited compose but nothing changed | restart != recreate | see "Changing a container's config" |
 
 ## Storage and stacks cutover (IaC phase 3)
+
+> **Done 2026-10-03** (21:31-21:50). Kept for the rollback (open until the
+> old copies are deleted, about 2026-10-10) and as a record.
 
 Moves `/DATA` from CasaOS's pool (NVMe + both drives) to a pool of the two
 hard drives owned by fstab, app data to `/srv/appdata`, and the seven

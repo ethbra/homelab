@@ -32,26 +32,27 @@ homelab/
   secrets/                   SOPS-encrypted values (tunnel token, forwarding secret)
   scripts/
     mc-status-ping.py        Minecraft status-ping tester (see RUNBOOK)
-    storage-preseed.sh       storage migration copy pass (see docs/NEXT-STEPS.md)
+    storage-preseed.sh       storage migration copy/compare (see RUNBOOK, cutover)
     check-sops-encrypted.sh  used by pre-commit and CI
     obsolete/                superseded scripts (the roles replaced them), kept for reference
-  config/                    local-only symlinks to live files not yet managed (ATM10, CasaOS)
+  stacks/<app>/compose.yaml  the seven container stacks (deployed by the stacks role)
+  config/                    local-only symlinks to live files not yet managed (ATM10)
   .github/workflows/ci.yml   CI: lint, Ansible checks, secret scanning (never deploys)
   .sops.yaml                 who can decrypt files in secrets/
   .pre-commit-config.yaml    the same checks, run locally before each commit
 ```
 
 `config/` is local only and gitignored: it links to live files that no role
-manages yet (ATM10's config, CasaOS's compose files). Each link goes away when
+manages yet (ATM10's config). Each link goes away when
 its phase moves that config into the repo.
 
 ## Changing something that a role manages
 
-Velocity, the TCPShield firewall, cloudflared, Docker's daemon config, SSH and
-the NVIDIA toolkit are managed by `ansible/`. Change them in the repo, then
+Velocity, the TCPShield firewall, cloudflared, Docker's daemon config, SSH,
+the NVIDIA toolkit, the storage pool and the container stacks (`stacks/`) are
+managed by `ansible/`. Change them in the repo, then
 apply (see docs/current/RUNBOOK.md). Editing the live file by hand works until
-the next run, which puts the repo's version back. Files under `/var/lib/casaos/apps/` are
-root-only, so use `sudo cat` to read them.
+the next run, which puts the repo's version back.
 
 ## Rules for this directory
 

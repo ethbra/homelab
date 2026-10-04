@@ -30,17 +30,13 @@
   diff: false
   notify: Restart cloudflared
 
-- name: Cloudflared units
+- name: Cloudflared unit
   ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "/etc/systemd/system/{{ item }}"
+    src: cloudflared.service
+    dest: /etc/systemd/system/cloudflared.service
     owner: root
     group: root
     mode: "0644"
-  loop:
-    - cloudflared.service
-    - cloudflared-update.service
-    - cloudflared-update.timer
   notify: Restart cloudflared
 
 - name: Cloudflared enabled and running
@@ -49,5 +45,5 @@
     enabled: true
     state: started
 
-# cloudflared-update.timer is deliberately left alone: it is disabled, and it is
-# pointless for an apt-installed cloudflared. Removed in the phase 2b cleanup.
+# The cloudflared-update timer is retired by the deprecated role; apt and
+# unattended-upgrades (base role) keep cloudflared current.

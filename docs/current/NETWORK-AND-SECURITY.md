@@ -1,7 +1,7 @@
 # Network and security
 
-> **Current state.** This describes the live server as it runs today (hand-managed
-> and CasaOS). The planned infrastructure-as-code setup is in
+> **Current state.** This describes the live server as it runs today (Ansible
+> roles and `stacks/`; CasaOS was retired 2026-10-03). The planned infrastructure-as-code setup is in
 > [../design/IAC-DESIGN.md](../design/IAC-DESIGN.md). This doc changes only when a migration
 > phase actually lands.
 
@@ -30,20 +30,14 @@ internet if the router forwards it); `127.0.0.1` = this machine only.
 |---|---|---|---|---|
 | **25565** | tcp | `192.168.1.22` | **Velocity** (public Minecraft entry) | TCPShield only (firewall + RealIP) |
 | **25565** | tcp | `127.0.0.1` | **ATM10** via Docker | **loopback only, never widen** |
-| 19132 | udp | all | Crafty Bedrock port | LAN; only matters if a Bedrock server runs |
 | 8111 | tcp | all | Crafty panel (https) | LAN |
-| 8112, 8100 | tcp | all | Crafty (8123 / 8100 inside) | LAN |
 | 32400 | tcp | all | Plex (host network; needs HTTPS from non-localhost) | LAN. **Also reachable from the internet on WAN :17511 via UPnP** (see above) |
 | 32410-32414, 1901 | udp | all | Plex discovery/GDM | LAN |
 | 32401, 32600, 34975 | tcp | loopback | Plex internals | local |
 | 8989 / 7878 / 9696 | tcp | all | Sonarr / Radarr / Prowlarr | LAN |
 | 5055 | tcp | all | Overseerr | LAN (or via Cloudflare Tunnel; check the dashboard) |
 | 9091, 51413 | tcp (+51413 udp) | all | Transmission UI / peer port | UI: LAN. 51413 is requested from the router by UPnP |
-| 80 | tcp | all | CasaOS gateway | LAN |
-| 22 | tcp | all | SSH | LAN (not statically forwarded) |
-| 3389 | tcp | all | xrdp (remote desktop) | LAN (not statically forwarded) |
-| 139, 445 / 137-138 udp | | all | Samba / NetBIOS | LAN |
-| 11434 | tcp | loopback | Ollama | local |
+| 22 | tcp | all | SSH (key-only) | LAN (not statically forwarded) |
 | 20241 | tcp | loopback | cloudflared metrics (probably) | local |
 | 631 | tcp | loopback | CUPS printing | local |
 
@@ -119,7 +113,8 @@ sets `FORWARD DROP`); `velocity-firewall` writes the rest at every boot.
 |---|---|---|
 | Velocity forwarding secret | `secrets/svalbard.yaml` (SOPS) -> `/opt/velocity/forwarding.secret` (0600) **and** `proxy-compatible-forge.toml` in the ATM10 config | must match; rotate both together, restart both |
 | Cloudflare tunnel token | `secrets/svalbard.yaml` (SOPS) -> `/etc/cloudflared/token` (0600, from the `cloudflared` role). The installer's plaintext copy in `~/.cloudflared/` was deleted 2026-10-02 | rotated 2026-10-02 (the old one had leaked into a session transcript); to rotate again see docs/NEXT-STEPS.md |
-| Crafty admin login | initial password was written to `/DATA/AppData/crafty/config/default-creds.txt` | verify it was changed, then delete that file |
+| Crafty admin login | in Crafty's own database (custom password + 2FA since 2026-10-02) | `default-creds.txt` deleted |
+| Media apps login | `secrets/svalbard.yaml` (SOPS: `media_apps_username`/`_password`) -> root-only `/opt/homelab/stacks/transmission/.env`; Sonarr/Radarr store it for their Transmission client | Transmission applies it at every start |
 | ~~No-IP DDNS login~~ | removed 2026-10-01 (script, source, trash and shell-history lines deleted) | the password appeared in a session transcript: **delete the DDNS key/hostnames or change the password in your noip.com account** |
 | Plex claim / token | inside the Plex config (`Preferences.xml`) | |
 
@@ -154,7 +149,7 @@ Ordered roughly by importance.
 6. **Hardcoded LAN IP** in `velocity.toml` (`bind`) and in the firewall script
    (`BIND_IP`). If the DHCP lease changes, Velocity fails to bind and the rules
    stop matching. Fix: reserve `192.168.1.22` for this machine in the router.
-7. **Crafty `privileged: true`** gives that container near-root on the host.
-   It is also where ATM10 runs. Keep the panel (8111) off the internet.
-8. **Plex image older than the database** (1.41.3 vs the 1.42.2 that wrote it).
+7. ~~Crafty `privileged: true`~~ removed 2026-10-03 (unprivileged since the
+   cutover). Keep the panel (8111) off the internet anyway: it runs ATM10.
+8. ~~Plex image older than the database~~ Plex is on 1.43.4 (pinned) since 2026-10-03.
 9. **Log-spam filter not applied** (cosmetic): see PROGRESS.

@@ -2,7 +2,7 @@
 
 Newest first. Update this whenever something is changed, decided or left open.
 
-## Status board (2026-10-01)
+## Status board (2026-10-03)
 
 | Area | State |
 |---|---|
@@ -14,10 +14,35 @@ Newest first. Update this whenever something is changed, decided or left open.
 | Velocity as a systemd service | done |
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
-| Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 pre-seed done, cutover code + runbook written 2026-10-03, window not yet run. **Next: docs/NEXT-STEPS.md** |
+| Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies kept until ~2026-10-10 |
+| Docs (this directory) | done 2026-10-01; `docs/current/` updated for the cutover 2026-10-03 |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 cutover done 2026-10-03 (rollback-week cleanup left). **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-03 (night) - cutover done
+- Prerequisites: ATM10 on Java 21 (ran 21.0.10, owner joined, real IP in the
+  log); media login in SOPS; stacks rendered; images pulled; the new pool's
+  mount rehearsed read-only at `/mnt/pool-test`.
+- Window 21:31-21:50: containers and CasaOS stopped; `--final` copy (0
+  differences); old pool released; `storage_cutover_done: true`; new pool
+  mounted from fstab; `--compare`: 1,314 files in both, 0 missing, 0 extra.
+  CasaOS containers and networks removed; stacks up from `/opt/homelab/stacks`.
+- Checked: ATM10 published on `127.0.0.1:25565` only, Crafty unprivileged,
+  `crafty_default` gateway 172.18.0.1; Sonarr/Radarr updated to the new
+  Transmission login (tests pass); Transmission, Prowlarr (app tests pass),
+  Overseerr, Plex playback, Crafty panel; ATM10 started on Java 21 and the
+  owner joined through TCPShield (real IP logged).
+- Bugs found during the window, fixed: the docker role wrote its drop-in into
+  a directory that didn't exist (check mode can't catch it), so step 5 ran
+  twice; the cloudflared role still installed the `cloudflared-update` units
+  that the deprecated role deletes (they would have flip-flopped on every full
+  run). Not applied yet: the cloudflared fix needs a `-K` run.
+- `config/atm10/` links pointed at `/DATA/AppData`, which now resolves to the
+  stale pre-cutover copy on the drives; repointed to `/srv/appdata` (local
+  only). Dead `config/iptables-rules.v4` link removed.
+- Docs: ARCHITECTURE, SERVICES, RUNBOOK, NETWORK-AND-SECURITY, README,
+  CLAUDE.md updated to the new layout.
 
 ### 2026-10-03 (later) - cutover prepared (code only)
 - New `storage` and `stacks` roles, `stacks/<app>/compose.yaml` for the seven

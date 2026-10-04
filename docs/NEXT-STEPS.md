@@ -4,7 +4,7 @@ Where the infrastructure-as-code work stands and what comes next, in order.
 The design is in [design/IAC-DESIGN.md](design/IAC-DESIGN.md); the history is in
 [../PROGRESS.md](../PROGRESS.md). Update this file whenever a step is done.
 
-Last updated: 2026-10-03.
+Last updated: 2026-10-03 (night).
 
 ## Where we are
 
@@ -13,7 +13,7 @@ Last updated: 2026-10-03.
 | 1. Repo, CI, SOPS, signed commits | done |
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
-| 3. Storage + containers out of CasaOS | pre-seed done; cutover code + runbook done 2026-10-03; next: owner prerequisites, then the window (step 3) |
+| 3. Storage + containers out of CasaOS | **cutover done 2026-10-03**; left: the rollback-week cleanup (step 3 below), ~2026-10-10 |
 | 4. Pull agent, drift check, Cloudflare in OpenTofu | not started |
 
 ## 0. Storage pre-seed: done 2026-10-03
@@ -72,20 +72,29 @@ One-off, by hand (not role-managed state):
 - `scripts/storage-preseed.sh --final` / `--compare` for the window
 - Everything is behind `storage_cutover_done` (host_vars, `false` today)
 
-## 3. Cutover window (~15-30 min of downtime)
+## 3. Cutover: done 2026-10-03; cleanup after the rollback week
 
-The procedure is **docs/current/RUNBOOK.md, "Storage and stacks cutover"**.
-Before it, the owner does its "Before the window" list:
+The window ran 21:31-21:50 (docs/current/RUNBOOK.md, "Storage and stacks
+cutover"): `/DATA` is the HDD-only pool from fstab (1,314 files, none missing),
+all seven stacks run from `stacks/` with data in `/srv/appdata`, CasaOS's
+services are disabled. Every app was checked by the owner; ATM10 runs on
+Java 21 behind TCPShield with real IPs.
 
-- [ ] ATM10 on Java 21 in Crafty (restart, join once)
-- [ ] `media_apps_username` / `media_apps_password` in SOPS
-- [ ] `ansible-playbook site.yml -K --tags storage,stacks` (renders only)
-- [ ] pre-pull the images
-- [ ] rehearse the pool mount at `/mnt/pool-test`
+Around **2026-10-10**, if nothing needed the rollback:
 
-After the window: update the "current" docs and CLAUDE.md (paths move from
-`/DATA/AppData` to `/srv/appdata`, compose files from CasaOS to `stacks/`).
-A week later: delete the old copies and CasaOS's files.
+- [ ] Delete the old copies: `/var/lib/casaos/files` (old NVMe branch, ~176 GB)
+      and `AppData/` on both drives **except
+      `/mnt/HDD_A/AppData/crafty/backups`** (live). List sizes first
+- [ ] Remove CasaOS's files with an Ansible change (binaries, units,
+      `/etc/casaos`, `/var/lib/casaos`, the `rclone` and `devmon` bits); never
+      `casaos-uninstall`. Drop the `config/casaos-apps` link
+- [ ] Remove the cutover runbook section's rollback part, keep a short record
+
+Also open:
+- [ ] Sonarr/Radarr/Prowlarr UI logins: set the shared media login in each
+      (design decision; Transmission already uses it)
+- [ ] Plex: confirm hardware transcoding (`(hw)` in the dashboard)
+- [ ] Optional: prune the unused old images (list in PROGRESS 2026-10-03)
 
 ## 4. Phase 4
 
@@ -98,10 +107,8 @@ A week later: delete the old copies and CasaOS's files.
 
 - [x] Rotate the Cloudflare tunnel token (done 2026-10-02 23:41; 4 connections
       healthy on the new token). Steps kept below for next time.
-- [ ] Crafty: set ATM10's execution command to
-      `/usr/lib/jvm/java-21-openjdk-amd64/bin/java` (cutover prerequisite)
-- [ ] Pick the media-apps login and add it with `sops secrets/svalbard.yaml`
-      as `media_apps_username` / `media_apps_password` (cutover prerequisite)
+- [x] Crafty: ATM10's execution command uses Java 21 (2026-10-03)
+- [x] Media-apps login in SOPS (2026-10-03)
 - [ ] After a week of Velocity running from `/opt/velocity` (from 2026-10-02):
       delete `~/projects/active/velocity`
 - [ ] Move the photos/videos in `/DATA/Media/Shared` somewhere deliberate

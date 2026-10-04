@@ -39,6 +39,15 @@
 # show the apps an empty directory (Plex and the *arrs would see everything as
 # missing), so Docker doesn't start at all. Takes effect at the next start;
 # no restart needed. Only after the cutover, when fstab owns /DATA.
+- name: Docker drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: storage_cutover_done | bool
+
 - name: Docker waits for the storage pool
   ansible.builtin.copy:
     dest: /etc/systemd/system/docker.service.d/homelab-storage.conf

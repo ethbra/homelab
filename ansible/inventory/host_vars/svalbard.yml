@@ -27,7 +27,7 @@ allow_disruptive_restarts: false
 # false: the storage role leaves CasaOS's /DATA pool alone and the stacks role
 # only renders files into /opt/homelab/stacks. true: fstab owns /DATA, Docker
 # waits for it, and the stacks role runs `docker compose up`.
-storage_cutover_done: false
+storage_cutover_done: true
 
 # Pool branches, hard drives only (IAC-DESIGN "Storage").
 storage_disks:
