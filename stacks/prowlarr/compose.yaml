@@ -1,0 +1,19 @@
+# Deployed by the stacks role to /opt/homelab/stacks/prowlarr.
+# The *arr apps, Overseerr and Transmission reach each other at
+# 192.168.1.22:<published port> (stored in their own settings), so container
+# IPs and networks don't matter to them.
+name: prowlarr
+services:
+  prowlarr:
+    image: linuxserver/prowlarr:2.5.2
+    container_name: prowlarr
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+    ports:
+      - "9696:9696"
+    volumes:
+      - /srv/appdata/prowlarr/config:/config

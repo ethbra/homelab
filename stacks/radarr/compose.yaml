@@ -1,0 +1,19 @@
+# Deployed by the stacks role to /opt/homelab/stacks/radarr.
+# Container paths (/movies, /downloads) are stored in Radarr's database.
+name: radarr
+services:
+  radarr:
+    image: linuxserver/radarr:6.3.0
+    container_name: radarr
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+    ports:
+      - "7878:7878"
+    volumes:
+      - /srv/appdata/radarr/config:/config
+      - /DATA/Media/Movies:/movies
+      - /DATA/Downloads:/downloads

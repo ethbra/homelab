@@ -1,0 +1,24 @@
+# Deployed by the stacks role to /opt/homelab/stacks/plex.
+# Host network (Plex discovery and port 32400). The library stores /DATA/Media
+# paths, so the mount keeps the same path inside the container.
+# App data keeps CasaOS's folder name (plex-nvidia).
+name: plex
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:1.43.4.10903-e5521bd8c-ls326
+    container_name: plex
+    network_mode: host
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+      VERSION: docker
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - /srv/appdata/plex-nvidia/config:/config
+      - /DATA/Media:/DATA/Media

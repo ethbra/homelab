@@ -10,6 +10,8 @@
   roles:
     - role: base
       tags: [base]
+    - role: storage
+      tags: [storage]
     - role: docker
       tags: [docker]
     - role: nvidia_toolkit
@@ -20,6 +22,8 @@
       tags: [firewall]
     - role: velocity
       tags: [velocity]
+    - role: stacks
+      tags: [stacks]
     - role: access
       tags: [access]
     - role: deprecated

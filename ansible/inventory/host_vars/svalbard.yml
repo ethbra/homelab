@@ -22,3 +22,26 @@ firewall_legacy_script: /home/svalbard/projects/active/firewall-velocity-tcpshie
 # Disruptive restarts (Docker, Velocity) only happen when this is true:
 #   ansible-playbook site.yml -K -e allow_disruptive_restarts=true
 allow_disruptive_restarts: false
+
+# Phase 3 switch (docs/current/RUNBOOK.md, "Storage and stacks cutover").
+# false: the storage role leaves CasaOS's /DATA pool alone and the stacks role
+# only renders files into /opt/homelab/stacks. true: fstab owns /DATA, Docker
+# waits for it, and the stacks role runs `docker compose up`.
+storage_cutover_done: false
+
+# Pool branches, hard drives only (IAC-DESIGN "Storage").
+storage_disks:
+  - path: /mnt/HDD_A
+    uuid: 9e35453e-b2f9-4f35-854c-2a2c6de65d29
+  - path: /mnt/HDD_B
+    uuid: bbfac642-66a5-4e5d-b19a-07df2e06e192
+
+# Bring-up order, lowest risk first. Each name is a directory under stacks/.
+stacks:
+  - prowlarr
+  - overseerr
+  - sonarr
+  - radarr
+  - transmission
+  - plex
+  - crafty

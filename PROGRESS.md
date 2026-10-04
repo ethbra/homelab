@@ -15,9 +15,32 @@ Newest first. Update this whenever something is changed, decided or left open.
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Docs (this directory) | done 2026-10-01 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 storage pre-seed done 2026-10-03. **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 pre-seed done, cutover code + runbook written 2026-10-03, window not yet run. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-03 (later) - cutover prepared (code only)
+- New `storage` and `stacks` roles, `stacks/<app>/compose.yaml` for the seven
+  apps, CasaOS service retirement in `deprecated`, all behind
+  `storage_cutover_done: false`. Checked with `--check` both ways: with the
+  switch off it only renders files and tightens `/srv/appdata` modes.
+  Collection `community.docker` 5.3.0 added (its compose module tested here
+  against Compose v5.5.1: creates, idempotent, removes).
+- `storage-preseed.sh` gained `--final` (containers must be stopped; app data
+  with `--delete` so stale SQLite `-wal` files can't survive) and `--compare`
+  (old vs new pool file lists).
+- Runbook: docs/current/RUNBOOK.md "Storage and stacks cutover", with rollback.
+- Found while preparing:
+  - stopping `casaos-local-storage` kills the old pool's mergerfs (same
+    cgroup), so it is stopped only after the final copy
+  - the apps reach each other only via 192.168.1.22 + published ports
+    (Prowlarr apps, *arr download clients, Overseerr), so container IPs and
+    networks can change freely
+  - ATM10 has auto-start off in Crafty and still runs plain `java` (25)
+  - CasaOS also runs `rclone rcd` (no-auth unix socket) and `devmon`
+  - every CasaOS container carried an injected `OPENAI_API_KEY` env var; not
+    carried over
+  - `/srv/appdata` and app folders were 0777 (copied from CasaOS)
 
 ### 2026-10-03 - pre-seed done, cleanup roles written
 - Storage pre-seed finished OK (00:18): ~15.7 GB app data to `/srv/appdata`,

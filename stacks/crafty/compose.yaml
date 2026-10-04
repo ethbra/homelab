@@ -1,0 +1,36 @@
+# Deployed by the stacks role to /opt/homelab/stacks/crafty.
+#
+# INVARIANT: ATM10 (online-mode=false) is published on 127.0.0.1:25565 only.
+# Velocity on the host is its only client; the stacks role fails the run if
+# 25565 is published on anything else.
+#
+# The project name and subnet are pinned: PCF on ATM10 trusts the network's
+# gateway (approvedProxyHosts = ["172.18.0.1"]), so it must not change.
+# Unprivileged (privileged: true was a workaround for an old Java problem).
+# Panel on 8111 only; Crafty's other ports (8100, 8123, 19132/udp) and
+# 25566+ stay unpublished.
+name: crafty
+services:
+  crafty:
+    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.4
+    container_name: crafty-container
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+    ports:
+      - "8111:8443"
+      - "127.0.0.1:25565:25565"
+    volumes:
+      - /srv/appdata/crafty/config:/crafty/app/config
+      - /srv/appdata/crafty/import:/crafty/import
+      - /srv/appdata/crafty/logs:/crafty/logs
+      - /srv/appdata/crafty/servers:/crafty/servers
+      # 67 GB of backups stay on the hard drive, outside the pool.
+      - /mnt/HDD_A/AppData/crafty/backups:/crafty/backups
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1

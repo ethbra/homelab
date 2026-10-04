@@ -51,3 +51,11 @@
     state: absent
   loop: "{{ deprecated_paths }}"
   notify: Reload systemd (deprecated)
+
+- name: CasaOS services are stopped and disabled
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ deprecated_casaos_services }}"
+  when: storage_cutover_done | bool

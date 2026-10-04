@@ -1,0 +1,13 @@
+stacks_dir: /opt/homelab/stacks
+
+# Values rendered into a stack's root-only .env (compose reads it for ${...}).
+# Only stacks listed here get one.
+stacks_env:
+  transmission:
+    MEDIA_APPS_USERNAME: "{{ media_apps_username }}"
+    MEDIA_APPS_PASSWORD: "{{ media_apps_password }}"
+
+# ATM10 must run on Java 21; the container's default `java` is 25.
+stacks_atm10_server_id: 1472e5eb-3e4d-4ce7-b2ac-723f83803f19
+stacks_atm10_java: /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+stacks_crafty_db: /srv/appdata/crafty/config/db/crafty.sqlite

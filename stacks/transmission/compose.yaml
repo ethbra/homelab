@@ -1,0 +1,25 @@
+# Deployed by the stacks role to /opt/homelab/stacks/transmission.
+# The login comes from SOPS (media_apps_username/password) through the
+# root-only .env next to this file; the image applies it at every start.
+name: transmission
+services:
+  transmission:
+    image: linuxserver/transmission:4.1.3
+    container_name: transmission
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+      PEERPORT: "51413"
+      USER: ${MEDIA_APPS_USERNAME:?set in .env}
+      PASS: ${MEDIA_APPS_PASSWORD:?set in .env}
+    ports:
+      - "9091:9091"
+      - "51413:51413/tcp"
+      - "51413:51413/udp"
+    volumes:
+      - /srv/appdata/transmission/config:/config
+      - /DATA/Downloads:/downloads
+      - /DATA/Downloads/watch:/watch

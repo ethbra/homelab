@@ -1,0 +1,18 @@
+storage_pool_mount: /DATA
+storage_appdata_dir: /srv/appdata
+# Folder names under it (Plex keeps CasaOS's plex-nvidia).
+storage_appdata_apps: [crafty, overseerr, plex-nvidia, prowlarr, radarr, sonarr, transmission]
+
+# minfreespace keeps 50 GB free on each drive before new files go elsewhere;
+# cache.files=partial is what dropcacheonclose needs to have an effect.
+# nofail: if the pool can't mount, boot continues and Docker stays down (docker role).
+storage_pool_options:
+  - nofail
+  - allow_other
+  - cache.files=partial
+  - dropcacheonclose=true
+  - category.create=mfs
+  - moveonenospc=true
+  - minfreespace=50G
+  - func.getattr=newest
+  - fsname=mergerfs

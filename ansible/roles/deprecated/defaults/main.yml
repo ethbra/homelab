@@ -41,3 +41,17 @@ deprecated_paths:
   - /etc/apt/sources.list.d/nonfree.list.bak
   # Not a package file (see dpkg -L), so it is removed explicitly.
   - /etc/iptables/rules.v4
+
+# CasaOS, after the storage/stacks cutover (storage_cutover_done). Stopped and
+# disabled only; its files stay for a week as the rollback path (RUNBOOK), then
+# a later change removes them. Never `casaos-uninstall`: its prompts default to
+# deleting all containers and /DATA/AppData.
+deprecated_casaos_services:
+  - casaos.service
+  - casaos-app-management.service
+  - casaos-gateway.service
+  - casaos-user-service.service
+  - casaos-message-bus.service
+  - casaos-local-storage.service   # its mergerfs process was the old /DATA pool
+  - rclone.service                 # CasaOS's rclone daemon (unauthenticated socket)
+  - devmon@devmon.service          # automounts removable drives for CasaOS

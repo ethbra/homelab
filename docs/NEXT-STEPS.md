@@ -13,7 +13,7 @@ Last updated: 2026-10-03.
 | 1. Repo, CI, SOPS, signed commits | done |
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
-| 3. Storage + containers out of CasaOS | pre-seed copy done 2026-10-03; next: step 2 |
+| 3. Storage + containers out of CasaOS | pre-seed done; cutover code + runbook done 2026-10-03; next: owner prerequisites, then the window (step 3) |
 | 4. Pull agent, drift check, Cloudflare in OpenTofu | not started |
 
 ## 0. Storage pre-seed: done 2026-10-03
@@ -54,37 +54,38 @@ One-off, by hand (not role-managed state):
 - [ ] Docker: remove the other unused images (optional; list in PROGRESS
   2026-10-03)
 
-## 2. Prepare the cutover (code only, no downtime)
+## 2. Prepare the cutover: done 2026-10-03 (code)
 
-- `storage` role: mergerfs pool of HDD_A + HDD_B only, mounted at `/DATA`
-  (fstab/systemd mount, by UUID), `minfreespace=50G`, `moveonenospc=true`,
-  `dropcacheonclose=true`, `func.getattr=newest`, `category.create=mfs`;
-  `/srv/appdata` owned and permissioned per app
-- `stacks/<app>/compose.yaml` for all seven: Plex, Sonarr, Radarr, Prowlarr,
-  Overseerr, Transmission, Crafty. Per IAC-DESIGN: `America/Los_Angeles`,
-  pinned image versions (Plex too), app data from `/srv/appdata`, logins from
-  SOPS into root-only `.env` files, Crafty unprivileged with only 8111 and
-  `127.0.0.1:25565`, `name: crafty` and the `crafty_default` subnet pinned so
-  PCF's `approvedProxyHosts = ["172.18.0.1"]` stays valid
-- Media apps get one shared login; Crafty keeps its own (+2FA)
-- A `stacks` role that deploys them and runs `docker compose up`
-- Checks: ATM10's port bound to `127.0.0.1` only; ATM10's Crafty execution
-  command uses Java 21
-- Write the cutover runbook (step 3) into docs/current/RUNBOOK.md and review it
+- `storage` role: drives by UUID (`nofail`), HDD-only mergerfs pool at
+  `/DATA`, `/srv/appdata` tightened to 0755. Docker gets
+  `RequiresMountsFor=/DATA`: if the pool is missing, containers stay down
+  instead of seeing an empty `/DATA`
+- `stacks/<app>/compose.yaml` for all seven, pinned versions, one time zone,
+  same ports and container paths as today; Overseerr moves to the default
+  bridge; Crafty unprivileged, panel 8111 + `127.0.0.1:25565` only, network
+  `172.18.0.0/16` pinned
+- `stacks` role: renders to `/opt/homelab/stacks`, Transmission's login from
+  SOPS into a root-only `.env`, `docker compose up` in order, then asserts
+  ATM10 is loopback-only and on Java 21
+- `deprecated` role: stops and disables CasaOS's services (and its `rclone`
+  and `devmon`) after the cutover; files stay a week for rollback
+- `scripts/storage-preseed.sh --final` / `--compare` for the window
+- Everything is behind `storage_cutover_done` (host_vars, `false` today)
 
 ## 3. Cutover window (~15-30 min of downtime)
 
-Outline (the reviewed runbook in step 2 is the real procedure):
+The procedure is **docs/current/RUNBOOK.md, "Storage and stacks cutover"**.
+Before it, the owner does its "Before the window" list:
 
-1. Stop all containers and CasaOS's app manager
-2. Final `scripts/storage-preseed.sh` pass (copies only what changed since the pre-seed)
-3. Unmount the CasaOS pool; the `storage` role mounts the HDD-only pool at `/DATA`
-4. Bring up each stack from the repo, one at a time, and check it
-   (Plex library, *arr paths, Transmission, Crafty panel, ATM10 join through TCPShield)
-5. Remove CasaOS with an Ansible task. **Never** `casaos-uninstall`: its
-   prompts default to deleting all containers and `/DATA/AppData`
-6. Keep `/var/lib/casaos/files` and the old `/DATA/AppData` copies until
-   everything has run for a week, then delete them
+- [ ] ATM10 on Java 21 in Crafty (restart, join once)
+- [ ] `media_apps_username` / `media_apps_password` in SOPS
+- [ ] `ansible-playbook site.yml -K --tags storage,stacks` (renders only)
+- [ ] pre-pull the images
+- [ ] rehearse the pool mount at `/mnt/pool-test`
+
+After the window: update the "current" docs and CLAUDE.md (paths move from
+`/DATA/AppData` to `/srv/appdata`, compose files from CasaOS to `stacks/`).
+A week later: delete the old copies and CasaOS's files.
 
 ## 4. Phase 4
 
@@ -98,9 +99,9 @@ Outline (the reviewed runbook in step 2 is the real procedure):
 - [x] Rotate the Cloudflare tunnel token (done 2026-10-02 23:41; 4 connections
       healthy on the new token). Steps kept below for next time.
 - [ ] Crafty: set ATM10's execution command to
-      `/usr/lib/jvm/java-21-openjdk-amd64/bin/java` (it runs on Java 25 today)
+      `/usr/lib/jvm/java-21-openjdk-amd64/bin/java` (cutover prerequisite)
 - [ ] Pick the media-apps login and add it with `sops secrets/svalbard.yaml`
-      as `media_apps_username` / `media_apps_password`
+      as `media_apps_username` / `media_apps_password` (cutover prerequisite)
 - [ ] After a week of Velocity running from `/opt/velocity` (from 2026-10-02):
       delete `~/projects/active/velocity`
 - [ ] Move the photos/videos in `/DATA/Media/Shared` somewhere deliberate

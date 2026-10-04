@@ -34,3 +34,19 @@
     group: root
     mode: "0644"
   notify: Restart docker
+
+# Containers bind-mount /DATA. If the pool isn't mounted, starting them would
+# show the apps an empty directory (Plex and the *arrs would see everything as
+# missing), so Docker doesn't start at all. Takes effect at the next start;
+# no restart needed. Only after the cutover, when fstab owns /DATA.
+- name: Docker waits for the storage pool
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/docker.service.d/homelab-storage.conf
+    content: |
+      [Unit]
+      RequiresMountsFor={{ storage_pool_mount | default('/DATA') }}
+    owner: root
+    group: root
+    mode: "0644"
+  when: storage_cutover_done | bool
+  notify: Reload systemd (docker)

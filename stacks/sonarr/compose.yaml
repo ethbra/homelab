@@ -1,0 +1,22 @@
+# Deployed by the stacks role to /opt/homelab/stacks/sonarr.
+# Still Sonarr v3: upgrading to v4 is its own change, not part of the move.
+# Container paths (/tv, /anime, /downloads) are stored in Sonarr's database;
+# keep them as they are.
+name: sonarr
+services:
+  sonarr:
+    image: linuxserver/sonarr:3.0.10
+    container_name: sonarr
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+    ports:
+      - "8989:8989"
+    volumes:
+      - /srv/appdata/sonarr/config:/config
+      - /DATA/Media/TV Shows:/tv
+      - /DATA/Media/Anime:/anime
+      - /DATA/Downloads:/downloads

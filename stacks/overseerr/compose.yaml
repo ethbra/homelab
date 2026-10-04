@@ -1,0 +1,20 @@
+# Deployed by the stacks role to /opt/homelab/stacks/overseerr.
+# Talks to Sonarr, Radarr and Plex at 192.168.1.22 (stored in settings.json).
+# Default bridge like the other media apps: CasaOS gave it its own network
+# (overseerr_default), and an auto-addressed network could take 172.18.0.0/16,
+# which Crafty's network must keep.
+name: overseerr
+services:
+  overseerr:
+    image: linuxserver/overseerr:1.35.0
+    container_name: overseerr
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+    ports:
+      - "5055:5055"
+    volumes:
+      - /srv/appdata/overseerr/config:/config
