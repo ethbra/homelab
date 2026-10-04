@@ -13,7 +13,7 @@ Status as of 2026-10-03. "Managed by" tells you how to restart it (see RUNBOOK).
 |---|---|---|
 | `docker` | container engine | `/etc/docker/daemon.json`: `default-runtime: nvidia`; `RequiresMountsFor=/DATA` (drop-in) |
 | `DATA.mount`, `mnt-HDD_A.mount`, `mnt-HDD_B.mount` | the drives and the mergerfs pool | from `/etc/fstab`, `storage` role |
-| `casaos*`, `rclone`, `devmon@devmon` | CasaOS (retired) | stopped and disabled by the `deprecated` role; files removed after the rollback week |
+| ~~`casaos*`, `rclone`, `devmon@devmon`~~ | CasaOS | removed 2026-10-03 by the `deprecated` role (units, binaries, `/etc/casaos`, `/var/lib/casaos`, `udevil`) |
 | `velocity` | Minecraft proxy | runs as system user `velocity` from `/opt/velocity` (sandboxed unit); managed by the `velocity` role |
 | `velocity-firewall` | oneshot: applies the TCPShield firewall rules and the `raw` blocklist at boot | `Before=velocity.service`; managed by the `firewall` role |
 | `unattended-upgrades` (via `apt-daily-upgrade.timer`) | automatic security updates | `base` role: Debian security + cloudflared; no automatic reboot |

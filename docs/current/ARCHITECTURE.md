@@ -33,9 +33,8 @@ New files go to the drive with the most free space (`category.create=mfs`,
 mount (a drive missing), the box boots but no container starts, so no app sees
 an empty `/DATA`.
 
-Until about 2026-10-10 the pre-cutover copies are kept for rollback:
-`/var/lib/casaos/files` (old NVMe branch) and `AppData/` on the drives
-(visible as `/DATA/AppData`, no longer used except Crafty's backups).
+`/DATA/AppData` holds only `crafty/backups` (on HDD_A, bind-mounted directly).
+The pre-cutover copies were deleted 2026-10-03.
 
 ## Traffic flow: Minecraft (ATM10)
 

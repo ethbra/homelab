@@ -112,8 +112,8 @@ the script, restart Velocity. Better: reserve the IP in your router.
 
 ## Storage and stacks cutover (IaC phase 3)
 
-> **Done 2026-10-03** (21:31-21:50). Kept for the rollback (open until the
-> old copies are deleted, about 2026-10-10) and as a record.
+> **Done 2026-10-03** (21:31-21:50). Kept as a record. There is **no rollback
+> any more**: the old copies and CasaOS were removed the same night.
 
 Moves `/DATA` from CasaOS's pool (NVMe + both drives) to a pool of the two
 hard drives owned by fstab, app data to `/srv/appdata`, and the seven
@@ -219,31 +219,11 @@ Keep a second terminal open on the box. Every command is run from
    cd ansible && ansible-playbook site.yml --check --diff -K    # expect changed=0
    ```
 
-### Rollback
+### Afterwards (done 2026-10-03)
 
-Possible at any point until the old copies are deleted (a week later).
-Anything the apps wrote after step 7 is lost.
-
-```bash
-for s in prowlarr overseerr sonarr radarr transmission plex crafty; do
-  sudo docker compose --project-directory /opt/homelab/stacks/$s down; done
-sudo rm /etc/systemd/system/docker.service.d/homelab-storage.conf
-sudo systemctl daemon-reload   # before the umount: Docker must no longer require /DATA
-sudo umount /DATA
-sudo nano /etc/fstab           # delete the /DATA line and the two /mnt/HDD_* lines Ansible added
-sudo systemctl daemon-reload
-sudo systemctl start casaos-local-storage && findmnt /DATA   # old pool back (/var/lib/casaos/files:...)
-sudo systemctl start casaos casaos-app-management casaos-gateway casaos-user-service casaos-message-bus rclone devmon@devmon
-for a in prowlarr overseerr sonarr radarr transmission plex-nvidia crafty; do
-  (cd /var/lib/casaos/apps/$a && sudo docker compose up -d); done
-```
-Then set `storage_cutover_done: false` again (don't commit the `true`).
-
-### After a week
-
-Delete `/var/lib/casaos/files` and the old `/DATA/AppData` copies on the
-drives (except `/mnt/HDD_A/AppData/crafty/backups`, which is live), and
-remove CasaOS's files with an Ansible change. Update the "current" docs.
+Old copies deleted (`/var/lib/casaos/files`, `AppData/` on both drives except
+`/mnt/HDD_A/AppData/crafty/backups`) after a fresh ATM10 backup; CasaOS's
+files removed by the `deprecated` role.
 
 ## Working with Claude in this environment
 

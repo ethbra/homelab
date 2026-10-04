@@ -13,7 +13,7 @@ Last updated: 2026-10-03 (night).
 | 1. Repo, CI, SOPS, signed commits | done |
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
-| 3. Storage + containers out of CasaOS | **cutover done 2026-10-03**; left: the rollback-week cleanup (step 3 below), ~2026-10-10 |
+| 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
 | 4. Pull agent, drift check, Cloudflare in OpenTofu | not started |
 
 ## 0. Storage pre-seed: done 2026-10-03
@@ -72,7 +72,7 @@ One-off, by hand (not role-managed state):
 - `scripts/storage-preseed.sh --final` / `--compare` for the window
 - Everything is behind `storage_cutover_done` (host_vars, `false` today)
 
-## 3. Cutover: done 2026-10-03; cleanup after the rollback week
+## 3. Cutover and cleanup: done 2026-10-03
 
 The window ran 21:31-21:50 (docs/current/RUNBOOK.md, "Storage and stacks
 cutover"): `/DATA` is the HDD-only pool from fstab (1,314 files, none missing),
@@ -80,21 +80,20 @@ all seven stacks run from `stacks/` with data in `/srv/appdata`, CasaOS's
 services are disabled. Every app was checked by the owner; ATM10 runs on
 Java 21 behind TCPShield with real IPs.
 
-Around **2026-10-10**, if nothing needed the rollback:
+Cleanup, done the same night (owner chose not to wait the rollback week):
 
-- [ ] Delete the old copies: `/var/lib/casaos/files` (old NVMe branch, ~176 GB)
-      and `AppData/` on both drives **except
-      `/mnt/HDD_A/AppData/crafty/backups`** (live). List sizes first
-- [ ] Remove CasaOS's files with an Ansible change (binaries, units,
-      `/etc/casaos`, `/var/lib/casaos`, the `rclone` and `devmon` bits); never
-      `casaos-uninstall`. Drop the `config/casaos-apps` link
-- [ ] Remove the cutover runbook section's rollback part, keep a short record
+- [x] Fresh ATM10 backup first (`2026-10-03_22-17-55.zip`): the backup schedule
+      had been off since 2025-11-07, so the newest backup was 11 months old
+- [x] Old copies deleted: `/var/lib/casaos/files` (175 GB), `AppData/` on both
+      drives except `/mnt/HDD_A/AppData/crafty/backups`; included the retired
+      ollama/open-webui data and six Oct 2025 ATM10 backups on HDD_B that
+      Crafty never saw (older than the ten on HDD_A)
+- [x] CasaOS files removed by the `deprecated` role (needs the owner's `-K` run)
 
 Also open:
-- [ ] Sonarr/Radarr/Prowlarr UI logins: set the shared media login in each
-      (design decision; Transmission already uses it)
-- [ ] Plex: confirm hardware transcoding (`(hw)` in the dashboard)
-- [ ] Optional: prune the unused old images (list in PROGRESS 2026-10-03)
+- [x] Sonarr/Radarr/Prowlarr UI logins set (2026-10-03)
+- [ ] **Crafty: turn ATM10's "Backup" schedule back on** (Schedules tab; off since 2025-11-07)
+- [ ] Plex hardware transcoding: tonight's playback was direct stream (video copied), so `(hw)` is untested; the last real transcode (2026-09-26) used `libx264` on the CPU. Check Settings -> Transcoder -> hardware acceleration (Plex Pass), force a lower quality, look for `(hw)` in Settings -> Dashboard
 
 ## 4. Phase 4
 

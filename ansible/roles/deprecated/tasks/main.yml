@@ -52,10 +52,32 @@
   loop: "{{ deprecated_paths }}"
   notify: Reload systemd (deprecated)
 
+- name: Read the installed units
+  ansible.builtin.service_facts:
+  when: storage_cutover_done | bool
+
+# Once their unit files are gone (below) there is nothing left to stop.
 - name: CasaOS services are stopped and disabled
   ansible.builtin.systemd_service:
     name: "{{ item }}"
     state: stopped
     enabled: false
   loop: "{{ deprecated_casaos_services }}"
+  when:
+    - storage_cutover_done | bool
+    - item in ansible_facts.services
+
+- name: CasaOS packages are purged
+  ansible.builtin.apt:
+    name: "{{ deprecated_casaos_packages }}"
+    state: absent
+    purge: true
   when: storage_cutover_done | bool
+
+- name: CasaOS files are removed
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ deprecated_casaos_paths }}"
+  when: storage_cutover_done | bool
+  notify: Reload systemd (deprecated)

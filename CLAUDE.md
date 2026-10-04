@@ -32,10 +32,10 @@ Update `PROGRESS.md` after any change, and `docs/NEXT-STEPS.md` when a step is d
 - Box: Debian 12, LAN IP 192.168.1.22. Containers are compose stacks in
   `stacks/<app>/compose.yaml`, deployed to `/opt/homelab/stacks/` by the
   `stacks` role (`--tags stacks`); app data in `/srv/appdata/<app>/`.
-  CasaOS is retired (services disabled 2026-10-03; never `casaos-uninstall`).
+  CasaOS was removed 2026-10-03 (by the `deprecated` role).
 - `/DATA` is a mergerfs pool of the two drives from fstab (`storage` role);
-  Docker requires it to be mounted. Old pre-cutover copies (`/var/lib/casaos/files`,
-  `AppData/` on the drives) are stale: never read config from them.
+  Docker requires it to be mounted. `/DATA/AppData` is only Crafty's backups
+  (HDD_A); all other app data is in `/srv/appdata`.
 - ATM10 UUID in Crafty: `1472e5eb-3e4d-4ce7-b2ac-723f83803f19`
   (`/srv/appdata/crafty/servers/<uuid>/`). ATM10 does not auto-start; start it
   from the Crafty panel after a Crafty restart.

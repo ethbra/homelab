@@ -8,17 +8,36 @@ Newest first. Update this whenever something is changed, decided or left open.
 |---|---|
 | GPU in Docker (NVIDIA toolkit, default runtime) | done |
 | Plex in container, library migrated, same server identity | done |
-| Plex hardware transcoding confirmed (`(hw)` in dashboard) | **not yet verified** |
+| Plex hardware transcoding confirmed (`(hw)` in dashboard) | **not yet verified**; the last real transcode (2026-09-26) ran on the CPU (`libx264`) |
+| ATM10 backups | fresh backup 2026-10-03; **schedule off since 2025-11-07**, turn it back on |
 | Native Plex removed | done (package, units and `/var/lib/plexmediaserver` all gone; verified 2026-10-02). The container is the only Plex; there is no rollback copy |
 | ATM10 behind Velocity + TCPShield, real IPs in logs | done, joins work |
 | Velocity as a systemd service | done |
 | TCPShield firewall (`TCPSHIELD_MC`) | **live and verified 2026-10-02**: chain has the two TCPShield ranges + DROP, hooked from `INPUT` for the LAN IP; unit enabled for boot, last run `success` |
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
-| Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies kept until ~2026-10-10 |
+| Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies and CasaOS removed |
 | Docs (this directory) | done 2026-10-01; `docs/current/` updated for the cutover 2026-10-03 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 cutover done 2026-10-03 (rollback-week cleanup left). **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-03 (late night) - old copies deleted, CasaOS removed
+- History: the cutover commit was pushed twice (66d262f with only the two
+  staged file deletions, 2517edb with everything) and merged (3303366); the
+  merge tree equals 2517edb, so nothing was lost.
+- Found Crafty's ATM10 backup schedule disabled since 2025-11-07 (newest
+  backup 11 months old). Owner took a fresh backup (22:17, 4.6 GB) before any
+  deletion. HDD_B also held six Oct 2025 ATM10 backups outside Crafty's view.
+- Owner chose not to wait the rollback week. Deleted: `/var/lib/casaos/files`
+  (175 GB), `AppData/` on both drives except `/mnt/HDD_A/AppData/crafty/backups`
+  (incl. retired ollama/open-webui data and the stray Plex `config/`).
+  `/` went from 268 to 94 GB used.
+- `deprecated` role: removes CasaOS's binaries, units, `/etc/casaos`,
+  `/var/lib/casaos` (old compose files with a plaintext Transmission login),
+  `rclone` (installed with CasaOS) and purges `udevil` (devmon).
+- Plex: tonight's playback was direct stream (video copied), so `(hw)` is
+  still unverified; the last video transcode on record used the CPU.
+- *arr logins set by the owner.
 
 ### 2026-10-03 (night) - cutover done
 - Prerequisites: ATM10 on Java 21 (ran 21.0.10, owner joined, real IP in the
