@@ -14,7 +14,7 @@ Last updated: 2026-10-03 (night).
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
 | 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
-| 4. Pull agent, drift check, Cloudflare in OpenTofu | not started |
+| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check written and tested 2026-10-04 (owner bootstraps); OpenTofu next |
 
 ## 0. Storage pre-seed: done 2026-10-03
 
@@ -92,15 +92,42 @@ Cleanup, done the same night (owner chose not to wait the rollback week):
 
 Also open:
 - [x] Sonarr/Radarr/Prowlarr UI logins set (2026-10-03)
-- [ ] **Crafty: turn ATM10's "Backup" schedule back on** (Schedules tab; off since 2025-11-07)
-- [ ] Plex hardware transcoding: tonight's playback was direct stream (video copied), so `(hw)` is untested; the last real transcode (2026-09-26) used `libx264` on the CPU. Check Settings -> Transcoder -> hardware acceleration (Plex Pass), force a lower quality, look for `(hw)` in Settings -> Dashboard
+- [x] ATM10 backup schedule: every 2 days at 03:00, keep 5 (my earlier "off" reading came from a stale DB copy)
+- [x] Plex hardware transcoding: not available, the account is on the free
+      plan (Plex requires Plex Pass; the setting doesn't appear). The GPU is
+      visible in the container, so it would work with Plex Pass. Transcodes run
+      on the CPU; prefer direct play
+
+## 3b. Remove migration scaffolding (after ~2026-10-09)
+
+Roles stay as long as what they manage exists; one-time migration code goes:
+
+- [ ] `storage_cutover_done`: always true now; drop the variable and its
+      `when:` conditions (storage, docker, stacks, deprecated roles)
+- [ ] Velocity move: after deleting `~/projects/active/velocity`, drop
+      `velocity_legacy_dir`, `firewall_legacy_script` and the jar-copy task
+- [ ] `scripts/storage-preseed.sh` -> `scripts/obsolete/` (or delete)
+- [ ] `deprecated` role: keep for a few months, then prune entries whose
+      removal has held (on a fresh install they do nothing)
 
 ## 4. Phase 4
 
-- Pull agent (`homelab-pull.timer`): fetch, verify every new commit's
-  signature against `/etc/homelab/allowed_signers`, fast-forward only, apply
-- Drift timer: `ansible-playbook --check --diff` on a schedule
-- Cloudflare DNS and tunnel ingress in OpenTofu
+- [x] Pull agent + drift check: `gitops` role (code, 2026-10-04). Logic tested
+      against a scratch repo: signed commits apply; unsigned, foreign-key,
+      bad-commit-under-a-good-tip and force-push are refused with one alert;
+      a failed apply alerts once and recovers with `homelab-apply`
+- [ ] **Owner: bootstrap it** (RUNBOOK "Pull agent", Bootstrap): allowed_signers
+      into `/etc/homelab`, `--tags gitops`, test
+- [ ] Owner, optional: Discord webhook -> SOPS `alert_webhook_url`
+- [ ] Cloudflare DNS and tunnel ingress in OpenTofu (decide the state backend
+      first; see Open decisions)
+- [ ] Later: agent also requires green CI for the commit (GitHub status API)
+
+## POCs (parked)
+
+- Jellyfin as an eighth stack next to Plex (free NVIDIA transcoding), with
+  `/DATA/Media` read-only; Jellyseerr would replace Overseerr if it stays
+- vcclient (GPU voice changer), removed 2026-10-03; rebuild if wanted
 
 ## Owner to-dos (any time)
 
@@ -137,7 +164,7 @@ Also open:
 
 ## Open decisions
 
-- Alerting channel for drift and pull failures (ntfy, email, Discord webhook)
+- ~~Alerting channel~~ decided 2026-10-04: Discord webhook (Slack supported)
 - OpenTofu state: local with built-in encryption, or a remote backend
 - TCPShield backend: keep the literal IP, or a DDNS hostname (see PROGRESS)
 - License for the public repo

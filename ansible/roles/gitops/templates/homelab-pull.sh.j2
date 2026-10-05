@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Managed by ansible/roles/gitops. Applies new signed commits from GitHub.
+#
+#   homelab-pull   (homelab-pull.timer) apply origin/{{ gitops_branch }} if it moved
+#   homelab-apply  (by hand, sudo)      the same, but also re-applies the current
+#                                       commit and retries one that failed
+#
+# Refuses anything that is not a fast-forward of the last applied commit, or
+# that contains a commit not signed by a key in {{ gitops_etc_dir }}/allowed_signers.
+# A refused or failed commit alerts once; the timer then waits for a newer one.
+set -euo pipefail
+
+REPO={{ gitops_repo_dir }}
+BRANCH={{ gitops_branch }}
+STATE={{ gitops_state_dir }}
+SIGNERS={{ gitops_etc_dir }}/allowed_signers
+export PATH={{ gitops_venv }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export SOPS_AGE_KEY_FILE={{ gitops_etc_dir }}/age.key
+
+manual=false
+[[ $(basename "$0") == homelab-apply ]] && manual=true
+[[ $EUID -eq 0 ]] || { echo "run as root: sudo $(basename "$0")" >&2; exit 1; }
+
+exec 9>/run/lock/homelab.lock
+flock 9                                  # one run at a time (pull, apply, drift)
+
+git_() { git -C "$REPO" -c gpg.ssh.allowedSignersFile="$SIGNERS" "$@"; }
+trap '/usr/local/sbin/homelab-alert "homelab-pull: unexpected error at line $LINENO; journalctl -u homelab-pull"' ERR
+
+applied=$(cat "$STATE/applied")
+# A network hiccup is not worth an alert; the next run tries again.
+if ! git_ fetch --quiet origin "$BRANCH"; then
+  echo "fetch failed (network?); will retry" >&2
+  exit 1
+fi
+new=$(git_ rev-parse "origin/$BRANCH")
+
+if ! $manual; then
+  [[ $new == "$applied" ]] && exit 0
+  [[ -f $STATE/stuck && $(cat "$STATE/stuck") == "$new" ]] && exit 0
+fi
+
+stuck() {
+  echo "$new" > "$STATE/stuck"
+  /usr/local/sbin/homelab-alert "$1"
+  exit 1
+}
+
+if ! git_ merge-base --is-ancestor "$applied" "$new"; then
+  stuck "pull REFUSED: origin/$BRANCH (${new:0:7}) is not a fast-forward of the applied commit (${applied:0:7}); history was rewritten. Nothing applied."
+fi
+
+# Every commit in the range, not only the tip. %G? is "G" only for a good
+# signature from a key in allowed_signers.
+bad=$(git_ log --format='%H %G?' "$applied..$new" | awk '$2 != "G" { printf "%s(%s) ", substr($1, 1, 7), $2 }')
+if [[ -n $bad ]]; then
+  stuck "pull REFUSED: not signed by an allowed key: ${bad% }. Nothing applied."
+fi
+
+git_ checkout --quiet --detach "$new"
+cd "$REPO/ansible"
+ansible-galaxy collection install -r requirements.yml -p .ansible/collections >/dev/null
+echo "applying ${new:0:7}: $(git_ log -1 --format=%s "$new")"
+if ansible-playbook site.yml </dev/null; then
+  echo "$new" > "$STATE/applied"
+  rm -f "$STATE/stuck"
+  echo "applied ${new:0:7}"
+else
+  stuck "apply FAILED for ${new:0:7}; journalctl -u homelab-pull. Retry: sudo homelab-apply"
+fi

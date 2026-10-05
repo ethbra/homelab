@@ -1,0 +1,129 @@
+# Root runs everything here, so nothing on the path may be writable by a user:
+# its own Ansible (not the pipx copy in /home), sops pinned by checksum, and a
+# root-owned clone.
+
+- name: Agent trust files are in place
+  ansible.builtin.stat:
+    path: "{{ gitops_etc_dir }}/{{ item }}"
+  loop: [age.key, allowed_signers]
+  register: gitops_trust_files
+
+- name: Agent trust files exist
+  ansible.builtin.assert:
+    that: gitops_trust_files.results | rejectattr('stat.exists') | list | length == 0
+    fail_msg: >-
+      Missing {{ gitops_trust_files.results | rejectattr('stat.exists') | map(attribute='item') | join(', ') }}
+      in {{ gitops_etc_dir }}; see RUNBOOK "Pull agent: bootstrap"
+    quiet: true
+
+- name: Agent directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: "{{ gitops_etc_dir }}", mode: "0700"}
+    - {path: "{{ gitops_state_dir }}", mode: "0700"}
+
+- name: Python venv support
+  ansible.builtin.apt:
+    name: python3-venv
+    state: present
+
+- name: Ansible for the agent (root-owned venv)
+  ansible.builtin.pip:
+    name: "ansible-core=={{ gitops_ansible_core_version }}"
+    virtualenv: "{{ gitops_venv }}"
+    virtualenv_command: python3 -m venv
+
+- name: Sops (pinned release, checksum-verified)
+  ansible.builtin.get_url:
+    url: >-
+      {{ 'https://github.com/getsops/sops/releases/download/v'
+      ~ gitops_sops_version ~ '/sops-v' ~ gitops_sops_version
+      ~ '.linux.amd64' }}
+    dest: /usr/local/bin/sops
+    checksum: "sha256:{{ gitops_sops_sha256 }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+# The clone is created once at the commit this playbook is running from; after
+# that only the agent moves it, and only to verified commits.
+# The git module can only clone/update, not read a local HEAD.
+- name: Commit this run comes from
+  ansible.builtin.command: git -C {{ playbook_dir | dirname }} rev-parse HEAD  # noqa: command-instead-of-module
+  register: gitops_bootstrap_commit
+  changed_when: false
+  check_mode: false
+
+- name: Root-owned clone
+  ansible.builtin.git:
+    repo: "{{ gitops_repo_url }}"
+    dest: "{{ gitops_repo_dir }}"
+    version: "{{ gitops_bootstrap_commit.stdout }}"
+    update: false
+
+# Trust anchor: commits after this one must be signed to be applied.
+- name: Last applied commit (first run only)
+  ansible.builtin.copy:
+    content: "{{ gitops_bootstrap_commit.stdout }}\n"
+    dest: "{{ gitops_state_dir }}/applied"
+    owner: root
+    group: root
+    mode: "0600"
+    force: false
+
+- name: Alert channel (from SOPS; without it, alerts go to the journal only)
+  ansible.builtin.copy:
+    content: |
+      ALERT_KIND={{ alert_webhook_kind }}
+      ALERT_WEBHOOK_URL={{ alert_webhook_url }}
+    dest: "{{ gitops_etc_dir }}/alert.env"
+    owner: root
+    group: root
+    mode: "0600"
+  when: alert_webhook_url is defined
+  no_log: true
+  diff: false
+
+- name: Agent scripts
+  ansible.builtin.template:
+    src: "{{ item }}.sh.j2"
+    dest: "/usr/local/sbin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: [homelab-pull, homelab-drift, homelab-alert]
+
+- name: Manual apply command
+  ansible.builtin.file:
+    src: /usr/local/sbin/homelab-pull
+    dest: /usr/local/sbin/homelab-apply
+    state: link
+
+- name: Agent units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - homelab-pull.service
+    - homelab-pull.timer
+    - homelab-drift.service
+    - homelab-drift.timer
+  notify: Reload systemd (gitops)
+
+- name: Flush handlers before enabling the timers
+  ansible.builtin.meta: flush_handlers
+
+- name: Agent timers enabled
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: [homelab-pull.timer, homelab-drift.timer]

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Managed by ansible/roles/gitops. Usage: homelab-alert MESSAGE
+# Always logs to the journal; also posts to the webhook in
+# {{ gitops_etc_dir }}/alert.env (Discord or Slack) when that file exists.
+set -euo pipefail
+
+msg="[$(hostname)] $*"
+logger -t homelab-alert -p user.warning -- "$msg"
+echo "$msg" >&2
+
+env={{ gitops_etc_dir }}/alert.env
+[[ -r $env ]] || exit 0
+# Read, not sourced: the URL may contain shell metacharacters.
+kind=$(sed -n 's/^ALERT_KIND=//p' "$env")
+url=$(sed -n 's/^ALERT_WEBHOOK_URL=//p' "$env")
+case $kind in
+  discord) field=content ;;
+  slack) field=text ;;
+  *) echo "homelab-alert: unknown ALERT_KIND '$kind'" >&2; exit 1 ;;
+esac
+payload=$(python3 -c 'import json, sys; print(json.dumps({sys.argv[1]: sys.argv[2][:1900]}))' "$field" "$msg")
+# Never echo the URL: it is the secret.
+curl -fsS --max-time 15 -H 'Content-Type: application/json' -d "$payload" "$url" >/dev/null \
+  || echo "homelab-alert: webhook delivery failed" >&2

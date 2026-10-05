@@ -1,0 +1,10 @@
+[Unit]
+Description=Apply new signed commits from GitHub (homelab pull agent)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelab-pull
+TimeoutStartSec=1h
+Nice=5

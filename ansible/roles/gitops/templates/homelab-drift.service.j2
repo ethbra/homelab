@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the box still matches the last applied commit (homelab drift check)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelab-drift
+TimeoutStartSec=1h
+Nice=10

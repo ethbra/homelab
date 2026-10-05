@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily homelab drift check
+
+[Timer]
+OnCalendar={{ gitops_drift_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

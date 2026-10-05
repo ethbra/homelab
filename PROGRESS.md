@@ -8,8 +8,8 @@ Newest first. Update this whenever something is changed, decided or left open.
 |---|---|
 | GPU in Docker (NVIDIA toolkit, default runtime) | done |
 | Plex in container, library migrated, same server identity | done |
-| Plex hardware transcoding confirmed (`(hw)` in dashboard) | **not yet verified**; the last real transcode (2026-09-26) ran on the CPU (`libx264`) |
-| ATM10 backups | fresh backup 2026-10-03; **schedule off since 2025-11-07**, turn it back on |
+| Plex hardware transcoding | **not available**: needs Plex Pass (free account). GPU is visible in the container (`nvidia-smi` OK), so it works the day the account has Plex Pass. CPU transcoding (`libx264`) until then |
+| ATM10 backups | schedule every 2 days at 03:00, keep 5; fresh backup 2026-10-03 |
 | Native Plex removed | done (package, units and `/var/lib/plexmediaserver` all gone; verified 2026-10-02). The container is the only Plex; there is no rollback copy |
 | ATM10 behind Velocity + TCPShield, real IPs in logs | done, joins work |
 | Velocity as a systemd service | done |
@@ -17,9 +17,25 @@ Newest first. Update this whenever something is changed, decided or left open.
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies and CasaOS removed |
 | Docs (this directory) | done 2026-10-01; `docs/current/` updated for the cutover 2026-10-03 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03. **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03; phase 4 pull agent written 2026-10-04, owner bootstraps. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-04 - phase 4: pull agent and drift check (code)
+- New `gitops` role: root-owned clone at `/opt/homelab/repo` (not
+  `/opt/homelab`, which holds the deployed stacks), its own Ansible in
+  `/opt/homelab/venv` (root must not run the pipx copy in /home), sops pinned
+  by checksum (the hand-installed 3.13.3 matched the release checksum).
+- `homelab-pull` (every 10 min) / `homelab-apply` (by hand): fast-forward only,
+  every new commit must be `%G? = G` against `/etc/homelab/allowed_signers`,
+  then the full playbook; one alert per refused or failed commit.
+  `homelab-drift` (daily 04:30): check mode at the applied commit.
+  `homelab-alert`: journal + Discord/Slack webhook from SOPS (optional).
+- Tested against a scratch clone with stubbed Ansible: signed apply; unsigned,
+  foreign-key (`U`), bad commit under a good tip, force-push all refused; failed
+  apply alerts once, stays quiet, recovers with `homelab-apply`; drift parse
+  for clean and drifted output.
+- Decided: alerts to a Discord webhook (Slack also supported).
 
 ### 2026-10-03 (late night) - old copies deleted, CasaOS removed
 - History: the cutover commit was pushed twice (66d262f with only the two
@@ -35,8 +51,12 @@ Newest first. Update this whenever something is changed, decided or left open.
 - `deprecated` role: removes CasaOS's binaries, units, `/etc/casaos`,
   `/var/lib/casaos` (old compose files with a plaintext Transmission login),
   `rclone` (installed with CasaOS) and purges `udevil` (devmon).
-- Plex: tonight's playback was direct stream (video copied), so `(hw)` is
-  still unverified; the last video transcode on record used the CPU.
+- Plex: a forced low-res test still transcoded on the CPU (`libx264`, no
+  hwaccel); the GPU is visible in the container. Cause confirmed: hardware
+  transcoding needs Plex Pass and the account is free (the setting isn't shown). The ATM10 backup schedule is on (2 days, keep 5): my "off since
+  2025-11" reading came from copying `crafty.sqlite` without its `-wal` file.
+- `deprecated` role: skip units whose file is gone but which systemd still
+  lists as `not-found` (rclone had been left `failed`).
 - *arr logins set by the owner.
 
 ### 2026-10-03 (night) - cutover done
@@ -291,7 +311,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 - [ ] **TCPShield backend is a literal IP** (checked 2026-10-02; value deliberately not recorded here), so an ISP address change takes the server offline until it is edited by hand. Spectrum residential, dynamic. Options: accept and watch for it, or use a hostname kept current by a DDNS timer (check first that the backend field accepts one; trade-off: the name would reveal the home IP to anyone who learns it). Decide before IaC phase 4.
 - [x] Apply + verify the firewall (2026-10-02).
 - [ ] Reserve `192.168.1.22` for this machine in the router.
-- [ ] Confirm Plex hardware transcode works (native Plex is already removed).
+- [x] ~~Confirm Plex hardware transcode~~ needs Plex Pass (free account); GPU is ready if that changes (2026-10-03).
 
 **Soon-ish**
 - [x] Rotate the Cloudflare tunnel token (done 2026-10-02).

@@ -1,0 +1,9 @@
+[Unit]
+Description=Check GitHub for new signed commits
+
+[Timer]
+OnCalendar={{ gitops_pull_schedule }}
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

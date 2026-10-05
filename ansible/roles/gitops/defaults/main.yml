@@ -1,0 +1,18 @@
+# The pull agent (docs/design/IAC-DESIGN.md, "Deployment: the pull model").
+gitops_repo_url: https://github.com/ethbra/homelab.git
+gitops_branch: main
+# Not /opt/homelab itself: /opt/homelab/stacks is the stacks role's deploy
+# directory, and the repo has its own stacks/ folder.
+gitops_repo_dir: /opt/homelab/repo
+gitops_venv: /opt/homelab/venv
+gitops_state_dir: /var/lib/homelab
+gitops_etc_dir: /etc/homelab          # age.key and allowed_signers, installed by hand (RUNBOOK)
+
+# Keep in step with .github/workflows/ci.yml.
+gitops_ansible_core_version: 2.19.13
+
+gitops_sops_version: 3.13.3
+gitops_sops_sha256: e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
+
+gitops_pull_schedule: "*:0/10"         # every 10 minutes
+gitops_drift_schedule: "*-*-* 04:30"   # daily, after Crafty's 03:00 backup

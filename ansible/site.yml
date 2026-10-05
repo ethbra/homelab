@@ -28,3 +28,5 @@
       tags: [access]
     - role: deprecated
       tags: [deprecated]
+    - role: gitops
+      tags: [gitops]

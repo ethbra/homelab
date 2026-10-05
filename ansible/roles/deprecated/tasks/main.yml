@@ -56,7 +56,9 @@
   ansible.builtin.service_facts:
   when: storage_cutover_done | bool
 
-# Once their unit files are gone (below) there is nothing left to stop.
+# Once their unit files are gone (below) there is nothing left to stop. A unit
+# that was in a failed state stays listed as "not-found" after its file is
+# removed; systemctl can't stop or disable it, so it is skipped too.
 - name: CasaOS services are stopped and disabled
   ansible.builtin.systemd_service:
     name: "{{ item }}"
@@ -65,7 +67,7 @@
   loop: "{{ deprecated_casaos_services }}"
   when:
     - storage_cutover_done | bool
-    - item in ansible_facts.services
+    - ansible_facts.services[item].status | default('not-found') != 'not-found'
 
 - name: CasaOS packages are purged
   ansible.builtin.apt:

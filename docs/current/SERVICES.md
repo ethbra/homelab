@@ -18,6 +18,7 @@ Status as of 2026-10-03. "Managed by" tells you how to restart it (see RUNBOOK).
 | `velocity-firewall` | oneshot: applies the TCPShield firewall rules and the `raw` blocklist at boot | `Before=velocity.service`; managed by the `firewall` role |
 | `unattended-upgrades` (via `apt-daily-upgrade.timer`) | automatic security updates | `base` role: Debian security + cloudflared; no automatic reboot |
 | `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress set in the Cloudflare dashboard; updated by unattended-upgrades |
+| `homelab-pull.timer` / `homelab-drift.timer` | pull agent (every 10 min) and drift check (daily 04:30) | `gitops` role; see RUNBOOK "Pull agent" |
 | `sshd`, `smartd` | remote access (key-only), disk health | see NETWORK-AND-SECURITY |
 | `gnome-user-share-webdav` (user unit) | GNOME "Personal File Sharing" (shows up as `apache2` on :42683) | **masked**; package intentionally left installed |
 

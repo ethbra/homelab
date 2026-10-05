@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Managed by ansible/roles/gitops. Daily drift check (homelab-drift.timer):
+# runs the playbook in check mode at the last applied commit and alerts if the
+# box no longer matches it (or the check itself fails).
+set -euo pipefail
+
+REPO={{ gitops_repo_dir }}
+STATE={{ gitops_state_dir }}
+export PATH={{ gitops_venv }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export SOPS_AGE_KEY_FILE={{ gitops_etc_dir }}/age.key
+
+[[ $EUID -eq 0 ]] || { echo "run as root: sudo $(basename "$0")" >&2; exit 1; }
+exec 9>/run/lock/homelab.lock
+flock 9
+
+alert() { /usr/local/sbin/homelab-alert "$1"; }
+
+applied=$(cat "$STATE/applied")
+git -C "$REPO" checkout --quiet --detach "$applied"   # a failed apply may have left HEAD ahead
+cd "$REPO/ansible"
+out=$(ansible-playbook site.yml --check --diff </dev/null 2>&1) || true
+printf '%s\n' "$out"
+
+recap=$(grep -A1 '^PLAY RECAP' <<<"$out" | tail -n1)
+if [[ -z $recap ]]; then
+  alert "drift check did not finish at ${applied:0:7}; journalctl -u homelab-drift"
+  exit 1
+fi
+n() { grep -oE "$1=[0-9]+" <<<"$recap" | cut -d= -f2; }
+changed=$(n changed) failed=$(n failed) unreachable=$(n unreachable)
+
+if (( changed + failed + unreachable > 0 )); then
+  tasks=$(awk '/^TASK \[/ { t = $0; sub(/^TASK \[/, "", t); sub(/\] \**$/, "", t) }
+               /^(changed|failed|fatal):/ { print t }' <<<"$out" | sort -u | head -n 8 | paste -sd ';' -)
+  alert "DRIFT at ${applied:0:7}: changed=$changed failed=$failed. Tasks: ${tasks:-?}. journalctl -u homelab-drift"
+  exit 1
+fi
+echo "no drift at ${applied:0:7}"

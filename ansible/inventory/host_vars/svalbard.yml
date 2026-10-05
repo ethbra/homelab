@@ -45,3 +45,8 @@ stacks:
   - transmission
   - plex
   - crafty
+
+# Where the pull agent and drift check send alerts: discord or slack. The
+# webhook URL itself is a secret (SOPS: alert_webhook_url); without it, alerts
+# only go to the journal (journalctl -t homelab-alert).
+alert_webhook_kind: discord
