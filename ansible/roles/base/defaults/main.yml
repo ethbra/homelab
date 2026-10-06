@@ -3,3 +3,9 @@ base_packages:
   - rsync
   - unattended-upgrades
   - apt-listchanges
+
+# OpenTofu for tofu/ (Cloudflare). Run by the owner from the working copy;
+# never by the pull agent. Official release .deb, pinned by its SHA256SUMS entry.
+base_tofu_release: https://github.com/opentofu/opentofu/releases/download
+base_tofu_version: 1.13.1
+base_tofu_sha256: 1cc324c6193dbc0fad98548eb8f6829a96416493425ca46bc70a291290780b32

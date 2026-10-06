@@ -52,22 +52,29 @@
   loop: "{{ deprecated_paths }}"
   notify: Reload systemd (deprecated)
 
-- name: Read the installed units
-  ansible.builtin.service_facts:
-  when: storage_cutover_done | bool
-
-# Once their unit files are gone (below) there is nothing left to stop. A unit
-# that was in a failed state stays listed as "not-found" after its file is
-# removed; systemctl can't stop or disable it, so it is skipped too.
-- name: CasaOS services are stopped and disabled
+# Once their unit files are gone (below) there is nothing left to stop.
+# LoadState is "loaded" only while the unit file exists; a unit that was left
+# failed stays listed (and service_facts can still call it "failed") after
+# its file is removed, and systemctl can't stop or disable it then.
+- name: Read the CasaOS units' load state
   ansible.builtin.systemd_service:
     name: "{{ item }}"
+  loop: "{{ deprecated_casaos_services }}"
+  register: deprecated_casaos_units
+  check_mode: false
+  when: storage_cutover_done | bool
+
+- name: CasaOS services are stopped and disabled
+  ansible.builtin.systemd_service:
+    name: "{{ item.item }}"
     state: stopped
     enabled: false
-  loop: "{{ deprecated_casaos_services }}"
+  loop: "{{ deprecated_casaos_units.results }}"
+  loop_control:
+    label: "{{ item.item }}"
   when:
     - storage_cutover_done | bool
-    - ansible_facts.services[item].status | default('not-found') != 'not-found'
+    - item.status.LoadState | default('not-found') == 'loaded'
 
 - name: CasaOS packages are purged
   ansible.builtin.apt:

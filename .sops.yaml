@@ -3,6 +3,10 @@
 #   1. admin: ~/.config/sops/age/keys.txt  (edits secrets)
 #   2. host:  /etc/homelab/age.key         (root-only; the pull agent decrypts with it)
 creation_rules:
+  # Couldflare (OpenTofu) secrets: admin key only. The host must not be able
+  # to decrypt a write-capable Cloudflare token (tofu is applied by hand).
+  - path_regex: secrets/cloudflare\.ya?ml$
+    age: age1yh0g5u822agnrwas68p5skx6nxmnxevw38yx2ucp90eamnqkapzszytrv7
   - path_regex: secrets/.*\.(ya?ml|json|env)$
     age: >-
       age1yh0g5u822agnrwas68p5skx6nxmnxevw38yx2ucp90eamnqkapzszytrv7,

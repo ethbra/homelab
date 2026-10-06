@@ -73,6 +73,10 @@ deprecated_casaos_paths:
   - /usr/bin/casaos-user-service
   - /usr/bin/rclone                # installed with CasaOS, only used by it
   - /etc/systemd/system/casaos.service
+  - /lib/systemd/system/casaos.service      # a second copy of the unit
+  - /lib/systemd/system/casaos-app-management.service.buildroot
+  - /lib/systemd/system/casaos-gateway.service.buildroot
+  - /usr/local/share/man/man1/rclone.1
   - /lib/systemd/system/casaos-app-management.service
   - /lib/systemd/system/casaos-gateway.service
   - /lib/systemd/system/casaos-user-service.service

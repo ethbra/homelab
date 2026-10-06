@@ -11,10 +11,13 @@ keys.txt
 .env
 .env.*
 
-# OpenTofu: state can contain secrets; it is stored encrypted outside git.
+# OpenTofu: state can contain secrets. Only tofu/terraform.tfstate is
+# committed, and tofu refuses to write it unencrypted (tofu/versions.tf).
 .terraform/
 *.tfstate
 *.tfstate.*
+!/tofu/terraform.tfstate
+*.tfplan
 crash.log
 
 # Tooling

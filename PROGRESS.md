@@ -17,9 +17,46 @@ Newest first. Update this whenever something is changed, decided or left open.
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies and CasaOS removed |
 | Docs (this directory) | done 2026-10-01; `docs/current/` updated for the cutover 2026-10-03 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03; phase 4 pull agent written 2026-10-04, owner bootstraps. **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03; phase 4 pull agent + drift check live 2026-10-04 (signed pushes to `main` deploy within ~10 min); OpenTofu next. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-04 (night) - first failed automatic apply, fixed
+- The agent's apply of 27caae2 (new webhook URL) failed at "CasaOS services
+  are stopped and disabled": `rclone.service` (left failed, file deleted) was
+  reported by service_facts as `failed` this time, not `not-found`, so the
+  skip didn't apply. The agent behaved as designed: one alert, `applied` left
+  at 7d0e85c, quiet until a newer commit. Because the run stopped there, the
+  new webhook URL (gitops role, later in the play) was not deployed yet.
+- Fix: decide by systemd's own `LoadState` (read with the systemd module),
+  which is `loaded` only while a unit file exists.
+- Found while checking: CasaOS also left `/lib/systemd/system/casaos.service`
+  (a second copy, still `loaded`), two `*.service.buildroot` files and rclone's
+  man page; added to the removal list.
+- `ansible.cfg`: `no_target_syslog = True`, so module invocations ("Invoked
+  with ...") no longer flood `journalctl -u homelab-pull`.
+
+### 2026-10-04 (night) - OpenTofu skeleton
+- Decided: tofu state encrypted with OpenTofu's state encryption (`enforced`
+  for state and plans, pbkdf2 passphrase in SOPS) and committed as
+  `tofu/terraform.tfstate`; `tofu apply` is run by hand by the owner via
+  `scripts/tofu.sh`, never by the pull agent (no write-capable Cloudflare token
+  on the box).
+- `tofu/versions.tf` (Cloudflare provider ~> 5.27), `scripts/tofu.sh` (SOPS ->
+  environment only), OpenTofu 1.13.1 added to the `base` role (official .deb,
+  pinned by checksum). State passphrase generated straight into SOPS (44 chars,
+  never displayed), in `secrets/cloudflare.yaml`, which is encrypted to the
+  admin key only: the host's age key can't decrypt the Cloudflare secrets. `.gitignore` reworked: only `tofu/terraform.tfstate` is
+  tracked.
+- Waiting on: a Cloudflare API token from the owner.
+
+### 2026-10-04 (evening) - pull agent live
+- Bootstrapped: allowed_signers in `/etc/homelab`, `--tags gitops`; first run
+  as root via `sudo homelab-apply`: ok=83 changed=0, applied 3feefca.
+- First automatic deploy: the commit adding `alert_webhook_url` was fetched,
+  verified and applied by the timer at 19:42 (applied 7d0e85c, changed=1:
+  `alert.env`). `sudo homelab-alert` reached Discord.
+- From now on a signed push to `main` is a deploy.
 
 ### 2026-10-04 - phase 4: pull agent and drift check (code)
 - New `gitops` role: root-owned clone at `/opt/homelab/repo` (not

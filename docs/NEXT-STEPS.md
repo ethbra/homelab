@@ -14,7 +14,7 @@ Last updated: 2026-10-03 (night).
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
 | 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
-| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check written and tested 2026-10-04 (owner bootstraps); OpenTofu next |
+| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); OpenTofu next |
 
 ## 0. Storage pre-seed: done 2026-10-03
 
@@ -116,11 +116,19 @@ Roles stay as long as what they manage exists; one-time migration code goes:
       against a scratch repo: signed commits apply; unsigned, foreign-key,
       bad-commit-under-a-good-tip and force-push are refused with one alert;
       a failed apply alerts once and recovers with `homelab-apply`
-- [ ] **Owner: bootstrap it** (RUNBOOK "Pull agent", Bootstrap): allowed_signers
-      into `/etc/homelab`, `--tags gitops`, test
-- [ ] Owner, optional: Discord webhook -> SOPS `alert_webhook_url`
-- [ ] Cloudflare DNS and tunnel ingress in OpenTofu (decide the state backend
-      first; see Open decisions)
+- [x] Bootstrapped 2026-10-04: first root run `changed=0` (applied 3feefca);
+      first automatic deploy 7d0e85c (the webhook commit) at 19:42
+- [x] Discord alerts working (`alert_webhook_url` in SOPS)
+- [ ] First drift check: 2026-10-05 04:30 (`journalctl -u homelab-drift`)
+- [ ] Cloudflare DNS and tunnel ingress in OpenTofu:
+  - [x] `tofu/` skeleton: provider pinned, state + plan encryption enforced,
+        passphrase generated into `secrets/cloudflare.yaml` (admin key only);
+        `scripts/tofu.sh` wrapper; OpenTofu 1.13.1 in the `base` role
+  - [ ] Owner: Cloudflare API token -> `secrets/cloudflare.yaml` as `cloudflare_api_token`
+  - [ ] Read the live DNS records and tunnel ingress; write them as resources
+        with `import` blocks; `scripts/tofu.sh plan` must show only imports
+  - [ ] First apply (imports only), commit the encrypted state
+  - [ ] Later: `tofu validate` in CI
 - [ ] Later: agent also requires green CI for the commit (GitHub status API)
 
 ## POCs (parked)
@@ -165,7 +173,7 @@ Roles stay as long as what they manage exists; one-time migration code goes:
 ## Open decisions
 
 - ~~Alerting channel~~ decided 2026-10-04: Discord webhook (Slack supported)
-- OpenTofu state: local with built-in encryption, or a remote backend
+- ~~OpenTofu state~~ decided 2026-10-04: encrypted (enforced), committed; applied by hand
 - TCPShield backend: keep the literal IP, or a DDNS hostname (see PROGRESS)
 - License for the public repo
 - Redundancy: SnapRAID if a third drive is ever added

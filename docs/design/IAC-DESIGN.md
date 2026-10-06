@@ -287,7 +287,7 @@ Never in the repo: the world, the pack's 448 jars, Crafty's database, backups.
 | 2a | **Host baseline: mirror** | Ansible roles describe today's host exactly, defects included; `--check --diff` against the live box is **empty** |
 | 2b | **Host baseline: change** | planned changes, one reviewed commit each: secrets from SOPS (done in code), SSH key-only, retire Samba/xrdp/ollama and the old `admin` account, Velocity to `/opt/velocity`, storage role takes over `/DATA`, cleanup |
 | 3 | **Containers** | all seven stacks run from `stacks/`; CasaOS removed; `docs/current/` rewritten to match |
-| 4 | **Cloudflare + GitOps** | DNS/tunnel in OpenTofu (state encrypted, not in git); pull agent and drift timer running |
+| 4 | **Cloudflare + GitOps** | DNS/tunnel in OpenTofu (state encrypted, committed; applied by hand); pull agent and drift timer running |
 | 5 | **Storage hosting** | designed and built in the repo |
 
 Phase 2 is the largest. Writing roles that match the live system exactly
@@ -327,9 +327,11 @@ Phase 2 is the largest. Writing roles that match the live system exactly
 
 (Decided: Ansible is `ansible-core` 2.19 via pipx, pinned in CI and in this doc.)
 
-- **Alerting channel** for pull failures and drift (ntfy, email, Discord webhook).
+- ~~Alerting channel~~ decided 2026-10-04: Discord webhook (`homelab-alert`, Slack also supported).
 - **Firewall tool:** keep iptables (matches today) or move to nftables with
   Docker-aware rules. Decide in phase 2.
-- **OpenTofu state:** local on the box with OpenTofu's built-in state
-  encryption, or a remote backend (e.g. Cloudflare R2).
+- ~~OpenTofu state~~ decided 2026-10-04: OpenTofu's built-in state encryption
+  (`enforced`, passphrase in SOPS), and the encrypted `tofu/terraform.tfstate`
+  is committed. `tofu apply` is run by hand by the owner (`scripts/tofu.sh`),
+  never by the pull agent, so no write-capable Cloudflare token lives on the box.
 - **License** for the public repo.
