@@ -119,11 +119,14 @@ Roles stay as long as what they manage exists; one-time migration code goes:
 - [x] Bootstrapped 2026-10-04: first root run `changed=0` (applied 3feefca);
       first automatic deploy 7d0e85c (the webhook commit) at 19:42
 - [x] Discord alerts working (`alert_webhook_url` in SOPS)
-- [ ] First drift check: 2026-10-05 04:30 (`journalctl -u homelab-drift`)
+- [x] First drift check 2026-10-05 04:30: `no drift at 7d0e85c`
+- [x] First failed automatic apply (27caae2, CasaOS unit check) handled as
+      designed and fixed by the next push (ebaf399 applied 2026-10-05 20:12)
 - [ ] Cloudflare DNS and tunnel ingress in OpenTofu:
   - [x] `tofu/` skeleton: provider pinned, state + plan encryption enforced,
         passphrase generated into `secrets/cloudflare.yaml` (admin key only);
         `scripts/tofu.sh` wrapper; OpenTofu 1.13.1 in the `base` role
+        (installed by the agent 2026-10-05)
   - [ ] Owner: Cloudflare API token -> `secrets/cloudflare.yaml` as `cloudflare_api_token`
   - [ ] Read the live DNS records and tunnel ingress; write them as resources
         with `import` blocks; `scripts/tofu.sh plan` must show only imports

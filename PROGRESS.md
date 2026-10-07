@@ -21,6 +21,12 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-05 - agent recovered, first drift check clean
+- First drift check (04:30): ok=84 changed=0, `no drift at 7d0e85c`.
+- The fix commit ebaf399 was applied by the agent at 20:12 (failed=0,
+  changed=4): OpenTofu 1.13.1 installed, CasaOS leftovers removed, new webhook
+  URL written. Test alert reached Discord at the new URL.
+
 ### 2026-10-04 (night) - first failed automatic apply, fixed
 - The agent's apply of 27caae2 (new webhook URL) failed at "CasaOS services
   are stopped and disabled": `rclone.service` (left failed, file deleted) was
