@@ -21,6 +21,16 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-07 - Cloudflare read, DNS record imported (plan only)
+- Owner added the Cloudflare API token to `secrets/cloudflare.yaml`. It
+  verifies as active and can read zone `ethbra.com` and the account's tunnels.
+- Live state: one DNS record, `play.ethbra.com` CNAME -> TCPShield (DNS only).
+  Written as `tofu/dns.tf` with an `import` block; `tofu init` + `plan`:
+  1 to import, 0 to add/change/destroy. Not applied yet (owner applies).
+- Finding: tunnel `Host` is healthy but has no ingress (remote config
+  version 0) and no DNS record points at it, so it exposes nothing. Its
+  future is an open decision (NEXT-STEPS).
+
 ### 2026-10-05 - agent recovered, first drift check clean
 - First drift check (04:30): ok=84 changed=0, `no drift at 7d0e85c`.
 - The fix commit ebaf399 was applied by the agent at 20:12 (failed=0,

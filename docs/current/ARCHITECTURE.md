@@ -102,5 +102,6 @@ reach each other via `192.168.1.22:<port>`.
 | ATM10 world, mods, config | `/srv/appdata/crafty/servers/<uuid>/` |
 | Velocity | `ansible/roles/velocity` -> `/opt/velocity/` |
 | Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service` (TCPShield chain + `raw` blocklist) |
-| Tunnel ingress | Cloudflare dashboard (not on disk) |
+| DNS (`ethbra.com`) | `tofu/dns.tf` (OpenTofu, applied by hand with `scripts/tofu.sh`) |
+| Tunnel ingress | Cloudflare dashboard (not on disk); empty as of 2026-10-07 |
 | TCPShield backend/domain | TCPShield dashboard (not on disk) |

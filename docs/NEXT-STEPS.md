@@ -127,10 +127,18 @@ Roles stay as long as what they manage exists; one-time migration code goes:
         passphrase generated into `secrets/cloudflare.yaml` (admin key only);
         `scripts/tofu.sh` wrapper; OpenTofu 1.13.1 in the `base` role
         (installed by the agent 2026-10-05)
-  - [ ] Owner: Cloudflare API token -> `secrets/cloudflare.yaml` as `cloudflare_api_token`
-  - [ ] Read the live DNS records and tunnel ingress; write them as resources
-        with `import` blocks; `scripts/tofu.sh plan` must show only imports
-  - [ ] First apply (imports only), commit the encrypted state
+  - [x] Owner: Cloudflare API token -> `secrets/cloudflare.yaml` as `cloudflare_api_token`
+  - [x] Read the live DNS records and tunnel ingress (2026-10-07). The zone
+        has one record, `play.ethbra.com` (CNAME to TCPShield), now in
+        `tofu/dns.tf` with an `import` block; `scripts/tofu.sh plan`:
+        1 to import, 0 to add/change/destroy. The tunnel `Host` is
+        dashboard-managed but has **no ingress** (remote config version 0,
+        no DNS record points at it): it is connected and serves nothing
+  - [ ] Owner: first apply (imports only), then commit `tofu/terraform.tfstate`
+        (encrypted) and `tofu/.terraform.lock.hcl`
+  - [ ] Decide the tunnel's future: give it hostnames (in tofu, as
+        `cloudflare_zero_trust_tunnel_cloudflared_config`), or remove it and
+        the `cloudflared` role
   - [ ] Later: `tofu validate` in CI
 - [ ] Later: agent also requires green CI for the commit (GitHub status API)
 
