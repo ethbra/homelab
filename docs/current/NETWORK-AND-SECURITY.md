@@ -13,7 +13,7 @@
 
 | | |
 |---|---|
-| LAN IP | `192.168.1.22` |
+| LAN IP | `192.168.1.22` (DHCP reservation in the router, confirmed 2026-10-13) |
 | Home WAN IP | dynamic (value deliberately not recorded in this repo; check with `curl -4 ifconfig.me`). **No DDNS is running** (No-IP removed 2026-10-01) |
 | Router: static port-forward | **only** TCP `25565` -> `192.168.1.22:25565` (confirmed by owner, 2026-10-01) |
 | Router: dynamic (UPnP / NAT-PMP) | **Plex** asks the router for WAN port `17511` and reports itself reachable from the internet (seen in its log 2026-10-01); **Transmission** has `port-forwarding-enabled: true` for peer port `51413`. These are *not* static forwards, so they won't show up in a forward list. Check the router's UPnP table, or turn UPnP off |
@@ -115,7 +115,7 @@ sets `FORWARD DROP`); `velocity-firewall` writes the rest at every boot.
 | Cloudflare tunnel token | `secrets/svalbard.yaml` (SOPS) -> `/etc/cloudflared/token` (0600, from the `cloudflared` role). The installer's plaintext copy in `~/.cloudflared/` was deleted 2026-10-02 | rotated 2026-10-02 (the old one had leaked into a session transcript); to rotate again see docs/NEXT-STEPS.md |
 | Crafty admin login | in Crafty's own database (custom password + 2FA since 2026-10-02) | `default-creds.txt` deleted |
 | Media apps login | `secrets/svalbard.yaml` (SOPS: `media_apps_username`/`_password`) -> root-only `/opt/homelab/stacks/transmission/.env`; Sonarr/Radarr store it for their Transmission client | Transmission applies it at every start |
-| ~~No-IP DDNS login~~ | removed 2026-10-01 (script, source, trash and shell-history lines deleted) | the password appeared in a session transcript: **delete the DDNS key/hostnames or change the password in your noip.com account** |
+| ~~No-IP DDNS login~~ | removed 2026-10-01 (script, source, trash and shell-history lines deleted) | the password appeared in a session transcript; DDNS key and hostnames deleted in the noip.com account (2026-10-13). DUC not installed (no package, binary or unit) |
 | Plex claim / token | inside the Plex config (`Preferences.xml`) | |
 
 ## Known risks and recommended follow-ups
@@ -133,7 +133,6 @@ Ordered roughly by importance.
    updates it would need to be a hostname, if TCPShield accepts one; use your
    DNS provider's DDNS (e.g. Cloudflare), not No-IP. A hostname that resolves
    to the home IP reveals that IP to anyone who learns the name.
-   Also delete the stale DDNS key/hostnames in the noip.com account.
 3. **No host-level default-deny.** `INPUT` policy is ACCEPT; only the Minecraft
    port is filtered. Reasonable for a LAN box behind NAT, but combine with (2).
 4. **SSH / xrdp hardening not verified.** Confirm key-only SSH and no root login
@@ -146,9 +145,8 @@ Ordered roughly by importance.
    The package is deliberately **not** purged: removing `gnome-user-share` also
    removes the `gnome-core` and `task-gnome-desktop` meta-packages, and a later
    `apt autoremove` could then strip the desktop.
-6. **Hardcoded LAN IP** in `velocity.toml` (`bind`) and in the firewall script
-   (`BIND_IP`). If the DHCP lease changes, Velocity fails to bind and the rules
-   stop matching. Fix: reserve `192.168.1.22` for this machine in the router.
+6. ~~Hardcoded LAN IP~~ in `velocity.toml` (`bind`) and the firewall script
+   (`BIND_IP`): safe since `192.168.1.22` is reserved in the router (2026-10-13).
 7. ~~Crafty `privileged: true`~~ removed 2026-10-03 (unprivileged since the
    cutover). Keep the panel (8111) off the internet anyway: it runs ATM10.
 8. ~~Plex image older than the database~~ Plex is on 1.43.4 (pinned) since 2026-10-03.

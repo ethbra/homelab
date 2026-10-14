@@ -42,7 +42,7 @@ deprecated_paths:
   # Not a package file (see dpkg -L), so it is removed explicitly.
   - /etc/iptables/rules.v4
 
-# CasaOS, after the storage/stacks cutover (storage_cutover_done): services
+# CasaOS, retired by the storage/stacks cutover (2026-10-03): services
 # stopped and disabled, then its files removed (the old data copies were
 # deleted by hand on 2026-10-03). Never `casaos-uninstall`: its prompts default
 # to deleting all containers and /DATA/AppData.

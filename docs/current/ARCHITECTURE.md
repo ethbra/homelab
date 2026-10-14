@@ -87,9 +87,13 @@ reach each other via `192.168.1.22:<port>`.
 
 ## Other pieces
 
-- **Cloudflare Tunnel** (`cloudflared.service`) gives outbound-only access to
-  whatever hostnames are configured in the Cloudflare dashboard. The ingress
-  rules live there, not on this machine.
+- **Cloudflare Tunnel** `Host` (`cloudflared.service`) gives outbound-only
+  access to whatever hostnames the tunnel's ingress names. Two halves:
+  OpenTofu (`tofu/`) declares what Cloudflare should do (DNS records, the
+  tunnel's ingress, Access policies); `cloudflared` on this machine is the
+  connector that dials out to Cloudflare and carries the traffic to local
+  ports. The tunnel is remotely managed (token mode), so `cloudflared` picks
+  up ingress changes from Cloudflare without a restart. No hostnames yet.
 - **Remote access**: SSH (22, key-only).
 
 ## Where the "source of truth" is for each thing
@@ -103,5 +107,5 @@ reach each other via `192.168.1.22:<port>`.
 | Velocity | `ansible/roles/velocity` -> `/opt/velocity/` |
 | Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service` (TCPShield chain + `raw` blocklist) |
 | DNS (`ethbra.com`) | `tofu/dns.tf` (OpenTofu, applied by hand with `scripts/tofu.sh`) |
-| Tunnel ingress | Cloudflare dashboard (not on disk); empty as of 2026-10-07 |
+| Tunnel ingress | Cloudflare (not on disk); empty as of 2026-10-07. To be declared in `tofu/` with the first hostname |
 | TCPShield backend/domain | TCPShield dashboard (not on disk) |

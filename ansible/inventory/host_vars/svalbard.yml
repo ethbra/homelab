@@ -15,19 +15,9 @@ firewall_blocked_sources:
 
 firewall_script: /usr/local/sbin/homelab-tcpshield-firewall
 
-# Pre-migration locations, read once to copy the jars and then left as a rollback.
-velocity_legacy_dir: /home/svalbard/projects/active/velocity
-firewall_legacy_script: /home/svalbard/projects/active/firewall-velocity-tcpshield.sh
-
 # Disruptive restarts (Docker, Velocity) only happen when this is true:
 #   ansible-playbook site.yml -K -e allow_disruptive_restarts=true
 allow_disruptive_restarts: false
-
-# Phase 3 switch (docs/current/RUNBOOK.md, "Storage and stacks cutover").
-# false: the storage role leaves CasaOS's /DATA pool alone and the stacks role
-# only renders files into /opt/homelab/stacks. true: fstab owns /DATA, Docker
-# waits for it, and the stacks role runs `docker compose up`.
-storage_cutover_done: true
 
 # Pool branches, hard drives only (IAC-DESIGN "Storage").
 storage_disks:

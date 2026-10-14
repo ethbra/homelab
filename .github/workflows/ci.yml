@@ -44,6 +44,33 @@ jobs:
       - name: ansible-lint
         run: ansible-lint
 
+  # No secrets here: init only fetches the provider (pinned by the lock file)
+  # and validate never reads the encrypted state or calls Cloudflare.
+  tofu:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: tofu
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: install opentofu (same pinned .deb as the base role)
+        run: |
+          defaults=../ansible/roles/base/defaults/main.yml
+          version=$(awk '/^base_tofu_version:/ {print $2}' "$defaults")
+          sha256=$(awk '/^base_tofu_sha256:/ {print $2}' "$defaults")
+          deb="tofu_${version}_amd64.deb"
+          curl -fsSLO "https://github.com/opentofu/opentofu/releases/download/v${version}/${deb}"
+          echo "${sha256}  ${deb}" | sha256sum -c -
+          sudo dpkg -i "${deb}"
+      - name: fmt
+        run: tofu fmt -check -recursive -diff
+      - name: init
+        run: tofu init -backend=false -input=false -lockfile=readonly
+      - name: validate
+        run: tofu validate
+
   gitleaks:
     runs-on: ubuntu-24.04
     env:

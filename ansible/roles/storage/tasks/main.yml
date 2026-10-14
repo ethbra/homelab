@@ -3,8 +3,8 @@
     name: mergerfs
     state: present
 
-# App data lives on the NVMe, outside FUSE. The pre-seed copied CasaOS's 0777
-# modes; only the top two levels are tightened here, the apps own what's inside.
+# App data lives on the NVMe, outside FUSE. Only the top two levels are
+# managed here (CasaOS had left them 0777); the apps own what's inside.
 - name: App data directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -14,9 +14,6 @@
     mode: "0755"
   loop: "{{ [storage_appdata_dir] + storage_appdata_apps | map('regex_replace', '^', storage_appdata_dir ~ '/') }}"
 
-# Until the cutover, CasaOS mounts the drives and the old pool itself.
-# Mounting here before then would stack a second pool on top of /DATA.
-#
 # nofail: a dead drive must not stop the box from booting (SSH stays up).
 # The pool requires both drives, so with one missing /DATA stays unmounted
 # rather than writing into an empty mount point on the root filesystem.
@@ -28,7 +25,6 @@
     opts: noatime,nofail
     state: mounted
   loop: "{{ storage_disks }}"
-  when: storage_cutover_done | bool
 
 - name: Mergerfs pool mounted
   ansible.posix.mount:
@@ -38,4 +34,3 @@
     opts: "{{ (storage_pool_options + (storage_disks | map(attribute='path')
               | map('regex_replace', '^', 'x-systemd.requires-mounts-for=') | list)) | join(',') }}"
     state: mounted
-  when: storage_cutover_done | bool

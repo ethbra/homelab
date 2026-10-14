@@ -29,15 +29,16 @@ homelab/
     design/                  the target infrastructure-as-code design
   ansible/                   host configuration: the source of truth for everything it manages
     site.yml                 the playbook; roles/ holds one role per service
+  tofu/                      Cloudflare (DNS, tunnel) in OpenTofu; state committed, encrypted
   secrets/                   SOPS-encrypted values (tunnel token, forwarding secret)
   scripts/
     mc-status-ping.py        Minecraft status-ping tester (see RUNBOOK)
-    storage-preseed.sh       storage migration copy/compare (see RUNBOOK, cutover)
     check-sops-encrypted.sh  used by pre-commit and CI
+    tofu.sh                  runs tofu with its secrets from SOPS (owner only)
     obsolete/                superseded scripts (the roles replaced them), kept for reference
   stacks/<app>/compose.yaml  the seven container stacks (deployed by the stacks role)
   config/                    local-only symlinks to live files not yet managed (ATM10)
-  .github/workflows/ci.yml   CI: lint, Ansible checks, secret scanning (never deploys)
+  .github/workflows/ci.yml   CI: lint, Ansible and tofu checks, secret scanning (never deploys)
   .sops.yaml                 who can decrypt files in secrets/
   .pre-commit-config.yaml    the same checks, run locally before each commit
 ```

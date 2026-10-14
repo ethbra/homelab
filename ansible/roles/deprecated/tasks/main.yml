@@ -62,7 +62,6 @@
   loop: "{{ deprecated_casaos_services }}"
   register: deprecated_casaos_units
   check_mode: false
-  when: storage_cutover_done | bool
 
 - name: CasaOS services are stopped and disabled
   ansible.builtin.systemd_service:
@@ -72,21 +71,17 @@
   loop: "{{ deprecated_casaos_units.results }}"
   loop_control:
     label: "{{ item.item }}"
-  when:
-    - storage_cutover_done | bool
-    - item.status.LoadState | default('not-found') == 'loaded'
+  when: item.status.LoadState | default('not-found') == 'loaded'
 
 - name: CasaOS packages are purged
   ansible.builtin.apt:
     name: "{{ deprecated_casaos_packages }}"
     state: absent
     purge: true
-  when: storage_cutover_done | bool
 
 - name: CasaOS files are removed
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
   loop: "{{ deprecated_casaos_paths }}"
-  when: storage_cutover_done | bool
   notify: Reload systemd (deprecated)

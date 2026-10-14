@@ -17,9 +17,30 @@ Newest first. Update this whenever something is changed, decided or left open.
 | ATM10 log spam from Crafty's ping | open (cosmetic) |
 | Containers and storage | **moved off CasaOS 2026-10-03**: seven stacks in `stacks/`, app data in `/srv/appdata`, `/DATA` = HDD-only pool from fstab; old copies and CasaOS removed |
 | Docs (this directory) | done 2026-10-01; `docs/current/` updated for the cutover 2026-10-03 |
-| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03; phase 4 pull agent + drift check live 2026-10-04 (signed pushes to `main` deploy within ~10 min); OpenTofu next. **Next: docs/NEXT-STEPS.md** |
+| Infrastructure as code | phases 1, 2a done; 2b done (cleanup applied 2026-10-03); phase 3 done 2026-10-03; phase 4 pull agent + drift check live 2026-10-04 (signed pushes to `main` deploy within ~10 min); OpenTofu manages DNS (2026-10-12), `tofu validate` in CI; tunnel kept, its ingress goes into tofu with the first hostname. **Next: docs/NEXT-STEPS.md** |
 
 ## Log
+
+### 2026-10-13 - migration scaffolding removed, tofu in CI, tunnel kept
+- Decided: keep the tunnel `Host` and `cloudflared`. Tofu declares Cloudflare's
+  side (DNS, tunnel ingress, later Access policies); `cloudflared` is the
+  connector on the box that carries the traffic. Neither replaces the other.
+- CI: new `tofu` job (`fmt -check`, `init -backend=false -lockfile=readonly`,
+  `validate`), same pinned .deb as the `base` role, no secrets. Tested locally
+  on a clean checkout.
+- Removed the cutover/migration scaffolding: `storage_cutover_done` and its
+  conditions (storage, docker, stacks, deprecated), `velocity_legacy_dir`,
+  `firewall_legacy_script`, the jar-copy task (the jars are now only verified
+  and must exist), the RUNBOOK cutover section;
+  `storage-preseed.sh` -> `scripts/obsolete/`. Behaviour unchanged (the switch
+  was already `true`). Non-root `--check`: changed=0 in every role it can read.
+- Owner: deleted `~/projects/active/velocity` and `/DATA/Media/Shared`;
+  deleted the No-IP DDNS key/hostnames. Checked: no No-IP DUC on the box
+  (no package, binary or unit). `192.168.1.22` is reserved in the router.
+
+### 2026-10-12 - OpenTofu import confirmed
+- `tofu/terraform.tfstate` (serial 1, encrypted) and the lock file are in
+  0e75a43; `scripts/tofu.sh plan`: no changes. The DNS record is managed.
 
 ### 2026-10-07 - Cloudflare read, DNS record imported (plan only)
 - Owner added the Cloudflare API token to `secrets/cloudflare.yaml`. It
@@ -357,13 +378,13 @@ Newest first. Update this whenever something is changed, decided or left open.
 ## Open items / TODO
 
 **Do soon**
-- [ ] Crafty: set ATM10's execution command to `/usr/lib/jvm/java-21-openjdk-amd64/bin/java` (it runs on Java 25 today).
-- [ ] After a week of Velocity running from `/opt/velocity`: delete `~/projects/active/velocity` (rollback copy).
+- [x] Crafty: ATM10's execution command uses Java 21 (2026-10-03).
+- [x] Deleted `~/projects/active/velocity` (rollback copy) (2026-10-13).
 - [x] Back up both age private keys offline (2026-10-02: password-protected KeePass file, kept on a second PC and a flash drive).
-- [ ] Finish No-IP removal: the `noip-duc` package and unit are already gone (verified 2026-10-02). Remaining: delete the DDNS key/hostnames or change the password in your noip.com account.
+- [x] No-IP removal finished: DDNS key/hostnames deleted in the account; no DUC on the box (2026-10-13).
 - [ ] **TCPShield backend is a literal IP** (checked 2026-10-02; value deliberately not recorded here), so an ISP address change takes the server offline until it is edited by hand. Spectrum residential, dynamic. Options: accept and watch for it, or use a hostname kept current by a DDNS timer (check first that the backend field accepts one; trade-off: the name would reveal the home IP to anyone who learns it). Decide before IaC phase 4.
 - [x] Apply + verify the firewall (2026-10-02).
-- [ ] Reserve `192.168.1.22` for this machine in the router.
+- [x] `192.168.1.22` is reserved for this machine in the router (2026-10-13).
 - [x] ~~Confirm Plex hardware transcode~~ needs Plex Pass (free account); GPU is ready if that changes (2026-10-03).
 
 **Soon-ish**
@@ -380,9 +401,9 @@ Newest first. Update this whenever something is changed, decided or left open.
 **Nice to have**
 - [ ] Silence Crafty's ping noise in the ATM10 log (needs the log4j property to actually load, or a PCF-side option).
 - [ ] Decide what to do with the unused Crafty servers (rlcraft, Vanilla, Plugins Test): all share `127.0.0.1:25565`.
-- [ ] Remove leftover `/DATA/AppData/ollama-nvidia` and `open-webui-ollama` if unused.
+- [x] ~~Remove leftover ollama/open-webui app data~~ deleted with the old copies (2026-10-03).
 - [x] Put `homelab/` under git (2026-10-02; public at github.com/ethbra/homelab).
-- [ ] Document the Cloudflare tunnel's public hostnames here once checked in the dashboard.
+- [x] ~~Document the tunnel's hostnames~~ it has none (2026-10-07); they will be declared in `tofu/`.
 - [ ] Check that Crafty's dashboard still shows ATM10 stats (player count/version) after the next restart.
 
 ## Not covered here

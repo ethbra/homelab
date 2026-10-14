@@ -40,8 +40,6 @@
   no_log: true
   diff: false
 
-# Before the cutover the containers still belong to CasaOS (same names),
-# so nothing is started from here.
 - name: Stacks running
   community.docker.docker_compose_v2:
     project_src: "{{ stacks_dir }}/{{ item }}"
@@ -50,14 +48,12 @@
     wait: true
     wait_timeout: 300
   loop: "{{ stacks }}"
-  when: storage_cutover_done | bool
 
 - name: Read ATM10's published addresses
   ansible.builtin.command: docker port crafty-container 25565/tcp
   register: stacks_atm10_ports
   changed_when: false
   check_mode: false
-  when: storage_cutover_done | bool
 
 # online-mode=false: anything that reaches 25565 directly can join as anyone.
 - name: ATM10 is published on loopback only
@@ -67,7 +63,6 @@
       - stacks_atm10_ports.stdout_lines | reject('match', '^127\.0\.0\.1:25565$') | list | length == 0
     fail_msg: "25565 is published on {{ stacks_atm10_ports.stdout_lines }}; it must be 127.0.0.1 only"
     quiet: true
-  when: storage_cutover_done | bool
 
 - name: Read ATM10's execution command
   ansible.builtin.command:
@@ -83,7 +78,6 @@
   register: stacks_atm10_command
   changed_when: false
   check_mode: false
-  when: storage_cutover_done | bool
 
 - name: ATM10 runs on Java 21
   ansible.builtin.assert:
@@ -91,4 +85,3 @@
       - stacks_atm10_command.stdout | trim | regex_replace('^"', '') is match(stacks_atm10_java | regex_escape)
     fail_msg: "Set ATM10's execution command in Crafty to start with {{ stacks_atm10_java }}"
     quiet: true
-  when: storage_cutover_done | bool
