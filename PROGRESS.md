@@ -37,6 +37,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 - Owner: deleted `~/projects/active/velocity` and `/DATA/Media/Shared`;
   deleted the No-IP DDNS key/hostnames. Checked: no No-IP DUC on the box
   (no package, binary or unit). `192.168.1.22` is reserved in the router.
+- Pushed as 56c680c (signed); CI green, the new `tofu` job included.
 
 ### 2026-10-12 - OpenTofu import confirmed
 - `tofu/terraform.tfstate` (serial 1, encrypted) and the lock file are in
