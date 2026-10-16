@@ -21,6 +21,26 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-15 - Homepage stack written (not deployed yet)
+- `stacks/homepage/`: Homepage v2.5.0 on `:3000` (LAN), plus
+  `tecnativa/docker-socket-proxy` v0.5.0 (`CONTAINERS=1`, `POST=0`, socket
+  `:ro`) on an internal network, never published. Subnets pinned
+  (172.30.0.0/24, 172.30.1.0/24) so Crafty keeps 172.18.0.0/16.
+  `HOMEPAGE_ALLOWED_HOSTS` = `192.168.1.22:3000,dash.ethbra.com`.
+- Config in the repo (`stacks/homepage/config/`), mounted read-only. Homepage
+  insists on every skeleton file, so `kubernetes.yaml`/`proxmox.yaml` are
+  empty placeholders (without them it crash-loops on EROFS). Tiles: the
+  media apps and Crafty, LAN links, Docker status and stats. No API-key
+  widgets yet.
+- `stacks` role: new task deploys an optional `stacks/<name>/config/`;
+  `homepage` added to `stacks` in host_vars.
+- Tested as a throwaway copy on `127.0.0.1:3999` (removed afterwards): page
+  200; all 7 containers report `running` with stats; an unknown `Host` gets
+  400; `POST /containers/sonarr/stop` through the proxy gets 403 (Sonarr
+  untouched). Non-root `--check --tags stacks`: only homepage changes (plus the
+  usual root-only transmission `.env` read). yamllint, ansible-lint and
+  `compose config` clean.
+
 ### 2026-10-15 - decided: web entry point (nginx + Access + BlueMap)
 - Owner decided, after comparing options: nginx on `127.0.0.1:8080` behind the
   tunnel, routed by **subdomain** (paths rejected: Crafty/Overseerr can't run

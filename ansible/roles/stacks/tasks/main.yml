@@ -26,6 +26,19 @@
     mode: "0644"
   loop: "{{ stacks }}"
 
+# Optional stacks/<name>/config/, mounted read-only by the stack. Files
+# removed from the repo are not removed from the box.
+- name: Stack config directories
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../stacks/{{ item }}/config/"
+    dest: "{{ stacks_dir }}/{{ item }}/config/"
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+  loop: "{{ stacks }}"
+  when: (playbook_dir ~ '/../stacks/' ~ item ~ '/config') is directory
+
 - name: Stack .env files (root-only)
   ansible.builtin.copy:
     content: |

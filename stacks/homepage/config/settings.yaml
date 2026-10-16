@@ -1,0 +1,14 @@
+# https://gethomepage.dev/configs/settings/
+title: svalbard
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+hideVersion: true
+layout:
+  Media:
+    style: row
+    columns: 3
+  Minecraft:
+    style: row
+    columns: 2

@@ -1,0 +1,12 @@
+# https://gethomepage.dev/widgets/info/
+- resources:
+    cpu: true
+    memory: true
+    disk:
+      - /
+    uptime: true
+- datetime:
+    text_size: md
+    format:
+      timeStyle: short
+      dateStyle: medium

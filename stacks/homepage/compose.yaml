@@ -1,0 +1,56 @@
+# Deployed by the stacks role to /opt/homelab/stacks/homepage; config/ is
+# deployed next to it from stacks/homepage/config/ (read-only in the
+# container: the repo is the only place to edit it).
+# LAN dashboard on 192.168.1.22:3000. Later also dash.ethbra.com through
+# nginx + Access (docs/design/WEB-ENTRY.md).
+#
+# Docker status comes through a read-only socket proxy (GET/HEAD only), never
+# the raw socket: that would be root on the host for whoever takes over
+# Homepage. The proxy sits on an internal network shared only with Homepage.
+# Subnets are pinned so an auto-addressed network can't take 172.18.0.0/16,
+# which Crafty's network must keep.
+name: homepage
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v2.5.0
+    container_name: homepage
+    restart: unless-stopped
+    depends_on:
+      - dockerproxy
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+      HOMEPAGE_ALLOWED_HOSTS: "192.168.1.22:3000,dash.ethbra.com"
+      # Logs to stdout only; config/ is read-only.
+      LOG_TARGETS: stdout
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config:ro
+    networks:
+      - default
+      - dockerproxy
+
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: homepage-dockerproxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      POST: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dockerproxy
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  dockerproxy:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24

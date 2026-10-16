@@ -74,7 +74,10 @@ Left over:
         BlueMap map on `play.ethbra.com`. Plex, the -arrs and Transmission
         never go through the tunnel. In order:
     - [ ] `stacks/homepage/` on the LAN (`192.168.1.22:3000`), read-only
-          docker socket proxy, widget keys from SOPS
+          docker socket proxy: written and tested 2026-10-15; deploys on
+          push (pull agent). Then: open it, check tiles and status
+    - [ ] Later: API-key widgets (Sonarr/Radarr/Prowlarr/Plex/Overseerr
+          keys in SOPS as `HOMEPAGE_VAR_*` via `stacks_env`)
     - [ ] `stacks/nginx/` on `127.0.0.1:8080`: `dash`, `crafty`,
           `default_server` 444
     - [x] Owner (2026-10-15): token permissions added (Access: Apps and

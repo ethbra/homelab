@@ -1,0 +1,49 @@
+# https://gethomepage.dev/configs/services/
+# Links are LAN addresses: these apps are LAN-only by design (never through
+# the tunnel). Status and stats come from Docker via the socket proxy.
+- Media:
+    - Plex:
+        icon: plex.png
+        href: http://192.168.1.22:32400/web
+        server: svalbard
+        container: plex
+        showStats: true
+    - Overseerr:
+        icon: overseerr.png
+        href: http://192.168.1.22:5055
+        server: svalbard
+        container: overseerr
+        showStats: true
+    - Sonarr:
+        icon: sonarr.png
+        href: http://192.168.1.22:8989
+        server: svalbard
+        container: sonarr
+        showStats: true
+    - Radarr:
+        icon: radarr.png
+        href: http://192.168.1.22:7878
+        server: svalbard
+        container: radarr
+        showStats: true
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://192.168.1.22:9696
+        server: svalbard
+        container: prowlarr
+        showStats: true
+    - Transmission:
+        icon: transmission.png
+        href: http://192.168.1.22:9091
+        server: svalbard
+        container: transmission
+        showStats: true
+
+- Minecraft:
+    - Crafty:
+        icon: crafty-controller.png
+        href: https://192.168.1.22:8111
+        description: ATM10 and the other servers
+        server: svalbard
+        container: crafty-container
+        showStats: true

@@ -1,0 +1,4 @@
+# The read-only socket proxy from compose.yaml (internal network only).
+svalbard:
+  host: dockerproxy
+  port: 2375
