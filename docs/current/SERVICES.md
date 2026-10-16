@@ -17,7 +17,7 @@ Status as of 2026-10-15. "Managed by" tells you how to restart it (see RUNBOOK).
 | `velocity` | Minecraft proxy | runs as system user `velocity` from `/opt/velocity` (sandboxed unit); managed by the `velocity` role |
 | `velocity-firewall` | oneshot: applies the TCPShield firewall rules and the `raw` blocklist at boot | `Before=velocity.service`; managed by the `firewall` role |
 | `unattended-upgrades` (via `apt-daily-upgrade.timer`) | automatic security updates | `base` role: Debian security + cloudflared; no automatic reboot |
-| `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress set in the Cloudflare dashboard; updated by unattended-upgrades |
+| `cloudflared` | Cloudflare Tunnel client | token in `/etc/cloudflared/token`; ingress, DNS and Access in `tofu/` (`dash`, `crafty` -> nginx `127.0.0.1:8080`, Google login); updated by unattended-upgrades |
 | `homelab-pull.timer` / `homelab-drift.timer` | pull agent (every 10 min) and drift check (daily 04:30) | `gitops` role; see RUNBOOK "Pull agent" |
 | `sshd`, `smartd` | remote access (key-only), disk health | see NETWORK-AND-SECURITY |
 | `gnome-user-share-webdav` (user unit) | GNOME "Personal File Sharing" (shows up as `apache2` on :42683) | **masked**; package intentionally left installed |
@@ -38,6 +38,7 @@ All use `TZ=America/Los_Angeles`, `PUID`/`PGID` 1000, `restart: unless-stopped`.
 | `overseerr` | linuxserver/overseerr 1.35.0 | 5055 | |
 | `transmission` | linuxserver/transmission 4.1.3 | 9091 (UI), 51413 tcp+udp | login = the shared media login (SOPS, root-only `.env`) |
 | `homepage` | gethomepage/homepage v2.5.0 | 3000 (LAN dashboard) | config from `stacks/homepage/config/`, mounted read-only; no app data. Networks pinned `172.30.0.0/24`, `172.30.1.0/24` |
+| `nginx` | nginx 1.30.6-alpine | **127.0.0.1:8080** (host network) | web entry point for the tunnel: `dash.ethbra.com` -> Homepage, `crafty.ethbra.com` -> Crafty; any other Host gets 444. Config `stacks/nginx/config/`; restarted by the `stacks` role when it changes |
 | `homepage-dockerproxy` | tecnativa/docker-socket-proxy v0.5.0 | none (internal network only) | Homepage's only Docker access: `CONTAINERS=1`, `POST=0` (read-only, writes get 403) |
 
 The media apps reach each other at `192.168.1.22:<port>` (stored in their own

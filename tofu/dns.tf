@@ -20,3 +20,22 @@ import {
   to = cloudflare_dns_record.play
   id = "${local.zone_id}/6c4669a8c02f2308705de41a205cba7c"
 }
+
+# Tunnel hostnames (-> nginx). Proxied, so Access is in front. Created only
+# after Access is, so a name never resolves without a login in front of it.
+resource "cloudflare_dns_record" "tunnel" {
+  for_each = toset(["dash", "crafty"])
+
+  zone_id = local.zone_id
+  name    = "${each.key}.ethbra.com"
+  type    = "CNAME"
+  content = "${local.tunnel_id}.cfargotunnel.com"
+  proxied = true
+  ttl     = 1 # automatic
+  comment = "Tunnel Host -> nginx; behind Access"
+
+  depends_on = [
+    cloudflare_zero_trust_access_application.homelab,
+    cloudflare_zero_trust_access_application.wildcard,
+  ]
+}

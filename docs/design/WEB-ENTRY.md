@@ -96,6 +96,11 @@ Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -
   opened. More specific applications take precedence over it.
 - **Map:** an application on `play.ethbra.com` with a **bypass** policy
   (everyone), so the map is public.
+- **cloudflared checks the Access token too** (`origin_request.access` on each
+  ingress rule, AUD of `homelab`), so a request that somehow skips Access never
+  reaches nginx.
+- The owner's email is `access_owner_email` in `secrets/cloudflare.yaml`,
+  not in the public `.tf` files.
 - Crafty keeps its own login and 2FA behind Access (two layers).
 - Optional later: Access **independent MFA** (2026-04; TOTP, security key or
   passkey/biometric, checked by Cloudflare itself). Google's OIDC login doesn't
@@ -153,6 +158,10 @@ Rollback: point `play` back to TCPShield (one tofu change). The SRV can stay.
 - Zero Trust team domain: `ethbra.cloudflareaccess.com`. The organization's
   display name is still the generated `old-bonus-eaff...`. Cosmetic; it can be
   set in tofu with the Access step.
+- Google OAuth consent screen: **External**, publishing status **Testing**,
+  the owner as the only test user. "Internal" fails with `403 org_internal`
+  for a gmail.com account. "In production" needs a privacy-policy URL.
+  Testing has no cost here, because Access doesn't use refresh tokens.
 - Google OAuth client (Web). Redirect URI
   `https://ethbra.cloudflareaccess.com/cdn-cgi/access/callback`. Keys
   `google_oauth_client_id` and `google_oauth_client_secret` in

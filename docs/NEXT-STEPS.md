@@ -14,7 +14,7 @@ Last updated: 2026-10-15.
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
 | 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
-| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS and tunnel in OpenTofu (2026-10-12, 2026-10-15), validated in CI; first hostname next |
+| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS, tunnel and Access in OpenTofu, validated in CI; `dash` and `crafty` public behind Google login (2026-10-15); BlueMap next |
 
 ## 0-3. Done
 
@@ -77,16 +77,16 @@ Left over:
           docker socket proxy: live 2026-10-15 (ee2dc50)
     - [ ] Later: API-key widgets (Sonarr/Radarr/Prowlarr/Plex/Overseerr
           keys in SOPS as `HOMEPAGE_VAR_*` via `stacks_env`)
-    - [ ] `stacks/nginx/` on `127.0.0.1:8080`: `dash`, `crafty`,
-          `default_server` 444: written and tested 2026-10-15; deploys on
-          push
+    - [x] `stacks/nginx/` on `127.0.0.1:8080`: `dash`, `crafty`,
+          `default_server` 444: live 2026-10-15 (dde1f80)
     - [x] Owner (2026-10-15): token permissions added (Access: Apps and
           Policies Edit; Organizations, Identity Providers, and Groups Edit;
           verified by API); team domain `ethbra.cloudflareaccess.com`;
           Google OAuth client, `google_oauth_client_id`/`_secret` in
           `secrets/cloudflare.yaml`
-    - [ ] Tofu: Google IdP + Access apps (`homelab`, `*.ethbra.com` safety
-          net), then ingress + proxied DNS for `dash`, `crafty`
+    - [x] Tofu: Google IdP + Access apps (`homelab`, `*.ethbra.com` safety
+          net), ingress + proxied DNS for `dash`, `crafty`: applied
+          2026-10-15; Google sign-in works
     - [ ] BlueMap mod on ATM10; Crafty compose `127.0.0.1:8100` (ATM10 port
           check before/after); nginx `play` block
     - [x] Owner: `mc.ethbra.com` added in TCPShield (2026-10-15)

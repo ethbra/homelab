@@ -8,6 +8,10 @@ secrets=../secrets/cloudflare.yaml   # admin key only (see .sops.yaml)
 
 CLOUDFLARE_API_TOKEN=$(sops -d --extract '["cloudflare_api_token"]' "$secrets")
 TF_VAR_state_passphrase=$(sops -d --extract '["tofu_state_passphrase"]' "$secrets")
-export CLOUDFLARE_API_TOKEN TF_VAR_state_passphrase
+TF_VAR_google_oauth_client_id=$(sops -d --extract '["google_oauth_client_id"]' "$secrets")
+TF_VAR_google_oauth_client_secret=$(sops -d --extract '["google_oauth_client_secret"]' "$secrets")
+TF_VAR_access_owner_email=$(sops -d --extract '["access_owner_email"]' "$secrets")
+export CLOUDFLARE_API_TOKEN TF_VAR_state_passphrase TF_VAR_google_oauth_client_id \
+  TF_VAR_google_oauth_client_secret TF_VAR_access_owner_email
 
 exec tofu "$@"

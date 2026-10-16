@@ -30,10 +30,37 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "host" {
   }
 }
 
-# No routes yet (remote config version 0). The first hostname adds
-# config.ingress here, ending with the http_status:404 catch-all.
+locals {
+  # Every public hostname goes to nginx (stacks/nginx), which routes by Host.
+  # This list is the allowlist of what the tunnel serves.
+  nginx = "http://127.0.0.1:8080"
+
+  # cloudflared itself checks the Access token before forwarding, so a request
+  # that somehow skipped Access never reaches nginx.
+  access_required = {
+    required  = true
+    team_name = "ethbra"
+    aud_tag   = [cloudflare_zero_trust_access_application.homelab.aud]
+  }
+}
+
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "host" {
   account_id = local.account_id
   tunnel_id  = local.tunnel_id
   source     = "cloudflare"
+  config = {
+    ingress = [
+      {
+        hostname       = "dash.ethbra.com"
+        service        = local.nginx
+        origin_request = { access = local.access_required }
+      },
+      {
+        hostname       = "crafty.ethbra.com"
+        service        = local.nginx
+        origin_request = { access = local.access_required }
+      },
+      { service = "http_status:404" },
+    ]
+  }
 }

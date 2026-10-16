@@ -21,7 +21,44 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
-### 2026-10-15 - nginx stack written (not deployed yet)
+### 2026-10-15 - dash and crafty public behind Access
+- Owner applied the Access change; `https://dash.ethbra.com` and
+  `crafty.ethbra.com` redirect to the Access login, and Google sign-in works.
+  Plan afterwards: no changes.
+- Google side: the first attempt failed with `403 org_internal` (consent
+  screen was Internal). Fixed by switching the audience to **External** and
+  keeping it in **Testing** with the owner as the only test user. "In
+  production" would need a privacy-policy URL. Testing costs nothing here:
+  Access uses `access_type=online`, so the 7-day refresh-token limit doesn't
+  apply. The owner also regenerated the OAuth client; updated in SOPS and
+  applied (identity provider updated in place).
+- pre-commit: `tofu/terraform.tfstate` excluded from end-of-file-fixer and
+  trailing-whitespace (tofu writes it without a final newline; it's tofu's
+  output, never edited).
+
+### 2026-10-15 - Access + tunnel routes written
+- `tofu/access.tf`: Google IdP; reusable policy "Owner only" (allow, owner's
+  email); application `homelab` (`dash` + `crafty`, Google only,
+  auto-redirect, 24h); catch-all application `*.ethbra.com` (same policy).
+- `tofu/tunnel.tf`: ingress `dash`, `crafty` -> `http://127.0.0.1:8080`
+  (nginx), then `http_status:404`. cloudflared also checks the Access token
+  (`origin_request.access`, team `ethbra`, the `homelab` AUD).
+- `tofu/dns.tf`: proxied CNAMEs `dash`, `crafty` -> the tunnel,
+  `depends_on` both Access applications (never a name without a login).
+- `scripts/tofu.sh` passes `google_oauth_client_id`/`_secret` and
+  `access_owner_email` from `secrets/cloudflare.yaml`. The email stays out
+  of the public repo and is `sensitive` in plans.
+- Plan with a placeholder email: 6 to add, 1 to change (tunnel config),
+  0 to destroy. `fmt`/`validate`/shellcheck clean. Waiting on the owner to add
+  `access_owner_email` to SOPS, then plan and apply.
+
+### 2026-10-15 - nginx live (loopback only)
+- Deployed as dde1f80; owner's `curl -H 'Host: dash.ethbra.com'
+  127.0.0.1:8080` returns 200. Checked: listening on `127.0.0.1:8080` only
+  (nothing on :80/:443); dash 200, crafty 302, sonarr 444; ATM10 still
+  `127.0.0.1:25565`. SERVICES and NETWORK-AND-SECURITY updated.
+
+### 2026-10-15 - nginx stack written
 - `stacks/nginx/`: `nginx:1.30.6-alpine` (stable), host network, listening on
   `127.0.0.1:8080` only; `config/` replaces the image's `conf.d` (read-only),
   so its default `:80` server never loads. Server blocks: `dash.ethbra.com` ->
