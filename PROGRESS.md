@@ -21,6 +21,18 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-15 - Public map hardened (read-only, rate limited)
+- `stacks/nginx/config/play.conf`: `limit_except GET` (others 403),
+  `client_max_body_size 1k`, per-visitor `limit_req` 30 r/s with
+  `burst=500 nodelay` and `limit_conn` 50, both answering 429. The key is the
+  real IP (`CF-Connecting-IP`, trusted from 127.0.0.1 only). Sized from the
+  nginx log: a page load peaks at ~213 requests/s (tiles), then about 1/s per
+  map (`live/players.json`). The only passwordless entry, so it gets the limits.
+- Tested on a throwaway copy (127.0.0.1:8099, removed): GET 200;
+  POST/PUT/DELETE/OPTIONS/PATCH 403; a body over 1k 413; a 700-request burst
+  from one IP gave 520 x 200 and 180 x 429 while another IP still got 200;
+  `dash` unaffected. HEAD reaches BlueMap, which answers 400 itself.
+
 ### 2026-10-15 - play.ethbra.com serves the map; game unaffected
 - Owner applied phase 2. `https://play.ethbra.com` shows BlueMap without a
   login, and joining `play.ethbra.com` still works (through the SRV).

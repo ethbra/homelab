@@ -125,6 +125,10 @@ Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -
   Live player markers on (owner's choice).
 - First render of a big modded world takes hours; modded blocks may render
   without textures.
+- nginx keeps the map read-only and rate limited (the only entry without a
+  login): GET only, 1k bodies, per-visitor 30 r/s with a 500 burst, 50
+  connections (429 beyond). Raise the burst if a big map's page loads start
+  getting 429s (`docker logs nginx | grep ' 429 '`).
 - Done 2026-10-15 for ATM10-8-2 (BlueMap 5.7-neoforge).
 
 ### Minecraft DNS: SRV, so `play.ethbra.com` can serve the map
