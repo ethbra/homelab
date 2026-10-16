@@ -27,6 +27,8 @@ storage_disks:
     uuid: bbfac642-66a5-4e5d-b19a-07df2e06e192
 
 # Bring-up order, lowest risk first. Each name is a directory under stacks/.
+# To retire one, move it to stacks_absent (stacks role defaults): it is taken
+# down and its /opt/homelab/stacks directory deleted; app data is kept.
 stacks:
   - prowlarr
   - overseerr

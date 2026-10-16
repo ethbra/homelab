@@ -21,6 +21,21 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-16 - stacks role removes what the repo removed (issue #1)
+- Files deleted from `stacks/<app>/config/` used to stay on the box (the copy
+  only adds/overwrites), so deleting an nginx server block left the site
+  live and the drift check saw nothing. The `stacks` role now deletes
+  deployed `config/` files the repo no longer has and restarts that stack;
+  in check mode (drift check) they show as changed.
+- New `stacks_absent` list (default empty): stacks in it are taken down
+  (`docker compose down`) and their `/opt/homelab/stacks/<app>` deleted; app
+  data is kept. Listing a stack in both `stacks` and `stacks_absent` fails.
+- Tested on scratch directories (Docker steps replaced by debug): stale,
+  hidden and nested files removed, repo files, `.env` and `compose.yaml` and
+  unlisted stacks untouched, second run unchanged. Not yet run on the box:
+  owner, `ansible-playbook site.yml --check --diff -K --tags stacks` should
+  show no removals today (expect changed=0).
+
 ### 2026-10-15 - Public map hardened (read-only, rate limited)
 - `stacks/nginx/config/play.conf`: `limit_except GET` (others 403),
   `client_max_body_size 1k`, per-visitor `limit_req` 30 r/s with

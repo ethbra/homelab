@@ -35,6 +35,15 @@ docker inspect <container> --format '{{json .HostConfig.PortBindings}}'   # veri
 Then commit and push. Secrets for a stack go in SOPS and `stacks_env`
 (`ansible/roles/stacks/defaults/main.yml`), rendered into a root-only `.env`.
 
+Removing things works the same way, from the repo:
+- A file deleted from `stacks/<app>/config/` is deleted from the box too, and
+  that stack restarts (e.g. deleting an nginx server block unpublishes the
+  site). Empty subdirectories are left behind.
+- To retire a whole stack, add a `stacks_absent: [<app>]` list to host_vars
+  (next to `stacks`) and take `<app>` out of `stacks`: the run does
+  `docker compose down` and deletes `/opt/homelab/stacks/<app>`. App data in
+  `/srv/appdata/<app>` is kept. Then delete `stacks/<app>/` from the repo.
+
 Gotchas learned the hard way:
 - **A restart does not pick up runtime, mount or port changes.** Docker pins
   these when the container is *created*; the stacks role recreates a stack
