@@ -39,3 +39,36 @@ resource "cloudflare_dns_record" "tunnel" {
     cloudflare_zero_trust_access_application.wildcard,
   ]
 }
+
+# Minecraft via SRV (docs/design/WEB-ENTRY.md), so play.ethbra.com can later
+# serve the map over HTTPS while players keep typing play.ethbra.com.
+# Phase 1: mc + SRV next to the unchanged play CNAME (clients prefer the SRV).
+# mc must also be in TCPShield's domain list (done 2026-10-15).
+resource "cloudflare_dns_record" "mc" {
+  zone_id = local.zone_id
+  name    = "mc.ethbra.com"
+  type    = "CNAME"
+  content = "29a07eabe84abc255812d194f34d468d.ipv4.tcpshield.com"
+  proxied = false
+  ttl     = 1 # automatic
+  comment = "TCPShield Minecraft Proxy (SRV target for play)"
+}
+
+# The target is the helper name, never the TCPShield CNAME itself ("Invalid
+# host"); the port is 25565 because TCPShield maps the backend port itself.
+resource "cloudflare_dns_record" "play_srv" {
+  zone_id = local.zone_id
+  name    = "_minecraft._tcp.play.ethbra.com"
+  type    = "SRV"
+  ttl     = 300
+  comment = "Minecraft: play.ethbra.com -> mc.ethbra.com (TCPShield)"
+  # The API echoes priority at the top level too; without it every plan
+  # shows "priority = 0 -> null".
+  priority = 0
+  data = {
+    priority = 0
+    weight   = 5
+    port     = 25565
+    target   = "mc.ethbra.com"
+  }
+}

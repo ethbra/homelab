@@ -29,7 +29,8 @@ internet if the router forwards it); `127.0.0.1` = this machine only.
 | Port | Proto | Bind | What | Intended exposure |
 |---|---|---|---|---|
 | **25565** | tcp | `192.168.1.22` | **Velocity** (public Minecraft entry) | TCPShield only (firewall + RealIP) |
-| **25565** | tcp | `127.0.0.1` | **ATM10** via Docker | **loopback only, never widen** |
+| **25565** | tcp | `127.0.0.1` | **the live Minecraft server** (whichever Crafty runs) via Docker | **loopback only, never widen** |
+| 8100 | tcp | `127.0.0.1` | BlueMap web server of the live server (if it has BlueMap), via Docker | local only (nginx) |
 | 8111 | tcp | all | Crafty panel (https) | LAN |
 | 32400 | tcp | all | Plex (host network; needs HTTPS from non-localhost) | LAN. **Also reachable from the internet on WAN :17511 via UPnP** (see above) |
 | 32410-32414, 1901 | udp | all | Plex discovery/GDM | LAN |
@@ -53,14 +54,18 @@ Regenerate this table with:
    (network layer) and RealIP `only-allow-proxy-connections = true`
    (application layer). A direct LAN connection to Velocity is dropped on
    purpose; that is why you can't status-ping it from inside the network.
-3. **Velocity -> ATM10.** Loopback only. ATM10 accepts forwarded identity only
-   from `172.18.0.1` (Docker's gateway as seen from inside the container)
-   **and** with the shared secret.
+3. **Velocity -> the live server.** Loopback only. The server accepts forwarded
+   identity only with the shared secret (and, with PCF, only from
+   `172.18.0.1`, Docker's gateway as seen from inside the container). This
+   holds for whichever server Crafty runs, as long as it is set up as in
+   SERVICES ("What any server needs").
 
 ### The invariant that protects everything
 
-> **ATM10 runs with `online-mode=false`. It is only safe because it is
-> unreachable except through Velocity.**
+> **The live server runs with `online-mode=false`. It is only safe because it
+> is unreachable except through Velocity.** This holds for every server, so
+> any server switched to must also be set up for forwarding (otherwise
+> nobody can join, which fails safe).
 
 If the crafty compose file ever publishes 25565 on `0.0.0.0` (or anything
 beyond `127.0.0.1`), anyone can log in as any player name, including an op.
@@ -113,7 +118,7 @@ sets `FORWARD DROP`); `velocity-firewall` writes the rest at every boot.
 
 | Secret | Location | Notes |
 |---|---|---|
-| Velocity forwarding secret | `secrets/svalbard.yaml` (SOPS) -> `/opt/velocity/forwarding.secret` (0600) **and** `proxy-compatible-forge.toml` in the ATM10 config | must match; rotate both together, restart both |
+| Velocity forwarding secret | `secrets/svalbard.yaml` (SOPS) -> `/opt/velocity/forwarding.secret` (0600) **and** each server's forwarding config (`config/proxy-compatible-forge.toml` or `config/paper-global.yml`) | must match; rotate together, restart Velocity and the live server |
 | Cloudflare tunnel token | `secrets/svalbard.yaml` (SOPS) -> `/etc/cloudflared/token` (0600, from the `cloudflared` role). The installer's plaintext copy in `~/.cloudflared/` was deleted 2026-10-02 | rotated 2026-10-02 (the old one had leaked into a session transcript); to rotate again see docs/NEXT-STEPS.md |
 | Crafty admin login | in Crafty's own database (custom password + 2FA since 2026-10-02) | `default-creds.txt` deleted |
 | Media apps login | `secrets/svalbard.yaml` (SOPS: `media_apps_username`/`_password`) -> root-only `/opt/homelab/stacks/transmission/.env`; Sonarr/Radarr store it for their Transmission client | Transmission applies it at every start |
@@ -150,6 +155,6 @@ Ordered roughly by importance.
 6. ~~Hardcoded LAN IP~~ in `velocity.toml` (`bind`) and the firewall script
    (`BIND_IP`): safe since `192.168.1.22` is reserved in the router (2026-10-13).
 7. ~~Crafty `privileged: true`~~ removed 2026-10-03 (unprivileged since the
-   cutover). Keep the panel (8111) off the internet anyway: it runs ATM10.
+   cutover). Keep the panel (8111) off the internet anyway: it controls every Minecraft server.
 8. ~~Plex image older than the database~~ Plex is on 1.43.4 (pinned) since 2026-10-03.
 9. **Log-spam filter not applied** (cosmetic): see PROGRESS.

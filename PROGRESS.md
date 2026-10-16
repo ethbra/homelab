@@ -21,7 +21,53 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
-### 2026-10-15 - BlueMap prepared (not deployed)
+### 2026-10-15 - Minecraft SRV, phase 1 applied
+- Owner applied. Live at 1.1.1.1: `mc` -> TCPShield, SRV `0 5 25565
+  mc.ethbra.com`. `mc-status-ping.py mc.ethbra.com 25565` answers through
+  TCPShield -> Velocity. The next plan showed a permanent `priority = 0 ->
+  null` on the SRV: the API echoes priority at the top level too, so the
+  config now sets both (plan: no changes). Next: a real join via
+  `play.ethbra.com` (now resolved through the SRV).
+
+### 2026-10-15 - Minecraft SRV, phase 1 written
+- Map works behind nginx: owner ran `bluemap reload`; BlueMap 5.7's web server
+  is on 8100 with every dimension loaded; `Host: play.ethbra.com` via nginx
+  returns 200. In a browser, `play.ethbra.com` still goes to TCPShield, which
+  answers HTTP with a 301 to `ethbra.com`. That's expected until phase 2.
+- `tofu/dns.tf`: `mc.ethbra.com` (DNS-only CNAME to the same TCPShield target)
+  and SRV `_minecraft._tcp.play.ethbra.com` -> `0 5 25565 mc.ethbra.com`
+  (TTL 300). `play` unchanged. Plan: 2 to add, 0 to change, 0 to destroy.
+
+### 2026-10-15 - BlueMap on the live server; repo made server-agnostic
+- **Mistake, fixed:** CLAUDE.md named the old "Cam ATM10" server
+  (`1472e5eb...`), so the BlueMap jar went into the wrong server's `mods/`.
+  It was removed there; that server is unchanged (no BlueMap config was
+  written). The live server is **ATM10-8-2** (`7e6ceae2...`, ATM10 v8.2,
+  NeoForge 21.1.251, auto-start on).
+- BlueMap 5.7-neoforge in ATM10-8-2's `mods/` (sha512 checked). Owner
+  restarted it; BlueMap loaded and wrote its config. Set in
+  `config/bluemap/core.conf`: `accept-download: true`, `render-thread-count: 2`,
+  `metrics: false`; live player markers on (owner's choice). Next: owner runs
+  `bluemap reload`.
+- Crafty recreated with `127.0.0.1:8100` (71f910e). Checked before and after:
+  25565 on `127.0.0.1` only.
+- **Java:** ATM10-8-2 runs on the container's Java 25. Its `startserver.sh`
+  requires >= 21, and its log shows no Java-related errors (only modpack noise:
+  loot tables, a mod reading config early). The role's "Java 21" assert was
+  checking the old server. Owner decided: drop the rule. Java is per server
+  (rlcraft uses 8).
+- **Server-agnostic** (owner: any server may be live: modded, vanilla, Paper,
+  old ones). New `scripts/crafty-servers.py` lists Crafty's servers and shows
+  the running one and its Java, read-only (`--path` prints its directory).
+  `stacks` role: removed the Java assert and `stacks_atm10_server_id`,
+  `stacks_atm10_java`, `stacks_crafty_db`; kept the loopback-25565 assert,
+  which holds for every server. CLAUDE.md, README, RUNBOOK, SERVICES (all five
+  servers, plus "what any server needs behind Velocity"), ARCHITECTURE,
+  NETWORK-AND-SECURITY, DECISIONS, WEB-ENTRY and stack comments no longer name a
+  server. Removed the local, gitignored `config/atm10/` symlinks (they pointed
+  at the old server). All servers kept (owner's choice).
+
+### 2026-10-15 - BlueMap prepared
 - Crafty compose: BlueMap's web port published on `127.0.0.1:8100` (nginx
   only). Pre-check: ATM10 is `127.0.0.1:25565` only. Pushing this recreates
   `crafty-container`, which stops every Minecraft server (ATM10 doesn't

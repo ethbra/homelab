@@ -75,39 +75,19 @@
   loop_control:
     label: "{{ item.item }}"
 
-- name: Read ATM10's published addresses
+# Whichever Minecraft server Crafty runs listens on 25565 inside the container,
+# behind Velocity with online-mode=false: anything that reaches it directly
+# can join as anyone. Holds for every server, so nothing here names one.
+- name: Read the Minecraft port's published addresses
   ansible.builtin.command: docker port crafty-container 25565/tcp
-  register: stacks_atm10_ports
+  register: stacks_minecraft_ports
   changed_when: false
   check_mode: false
 
-# online-mode=false: anything that reaches 25565 directly can join as anyone.
-- name: ATM10 is published on loopback only
+- name: Minecraft port is published on loopback only
   ansible.builtin.assert:
     that:
-      - stacks_atm10_ports.stdout_lines | length > 0
-      - stacks_atm10_ports.stdout_lines | reject('match', '^127\.0\.0\.1:25565$') | list | length == 0
-    fail_msg: "25565 is published on {{ stacks_atm10_ports.stdout_lines }}; it must be 127.0.0.1 only"
-    quiet: true
-
-- name: Read ATM10's execution command
-  ansible.builtin.command:
-    argv:
-      - python3
-      - -c
-      - |
-        import sqlite3, sys
-        db = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
-        print(db.execute("select execution_command from servers where server_id = ?", (sys.argv[2],)).fetchone()[0])
-      - "{{ stacks_crafty_db }}"
-      - "{{ stacks_atm10_server_id }}"
-  register: stacks_atm10_command
-  changed_when: false
-  check_mode: false
-
-- name: ATM10 runs on Java 21
-  ansible.builtin.assert:
-    that:
-      - stacks_atm10_command.stdout | trim | regex_replace('^"', '') is match(stacks_atm10_java | regex_escape)
-    fail_msg: "Set ATM10's execution command in Crafty to start with {{ stacks_atm10_java }}"
+      - stacks_minecraft_ports.stdout_lines | length > 0
+      - stacks_minecraft_ports.stdout_lines | reject('match', '^127\.0\.0\.1:25565$') | list | length == 0
+    fail_msg: "25565 is published on {{ stacks_minecraft_ports.stdout_lines }}; it must be 127.0.0.1 only"
     quiet: true

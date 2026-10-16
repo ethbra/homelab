@@ -7,13 +7,19 @@ Update `PROGRESS.md` after any change, and `docs/NEXT-STEPS.md` when a step is d
 - **Never print or write secret values** (forwarding secret, tunnel token,
   No-IP/Crafty credentials, Plex tokens). Reference their location only. If a
   command would print one, redact it.
-- **Invariant:** ATM10 (`online-mode=false`) must stay published on
-  `127.0.0.1:25565` only. Check `docker inspect crafty-container` before and
-  after any crafty compose edit (the `stacks` role also asserts it).
+- **Invariant:** the Minecraft server behind Velocity (`online-mode=false`),
+  whichever one it is, must stay published on `127.0.0.1:25565` only. Check
+  `docker inspect crafty-container` before and after any crafty compose edit
+  (the `stacks` role also asserts it).
 - No passwordless sudo here. Give the user the exact `sudo` commands; don't try.
 - Don't `pkill -f`/`pgrep -f` with a pattern that appears in your own command
   line; it matches the tool's shell and kills it. Use anchored patterns like `^java ...` or `[x]yz`.
-- Don't kill ATM10's Java process directly; restart it from Crafty.
+- Don't kill a Minecraft server's Java process directly; restart it from Crafty.
+- **Never assume which Minecraft server is live.** The owner switches between
+  Crafty servers (modded, vanilla, Paper, old ones). Ask Crafty:
+  `scripts/crafty-servers.py` (table, running one marked) or `--path` (its
+  directory). Nothing in the repo may hard-code a server UUID, name, loader or
+  Java version.
 - Anything an Ansible role manages (Velocity, firewall, cloudflared, SSH,
   Docker daemon config, storage mounts, container stacks) is changed in the
   repo, never by hand on the box.
@@ -36,13 +42,14 @@ Update `PROGRESS.md` after any change, and `docs/NEXT-STEPS.md` when a step is d
 - `/DATA` is a mergerfs pool of the two drives from fstab (`storage` role);
   Docker requires it to be mounted. `/DATA/AppData` is only Crafty's backups
   (HDD_A); all other app data is in `/srv/appdata`.
-- ATM10 UUID in Crafty: `1472e5eb-3e4d-4ce7-b2ac-723f83803f19`
-  (`/srv/appdata/crafty/servers/<uuid>/`). ATM10 does not auto-start; start it
-  from the Crafty panel after a Crafty restart.
-- ATM10 is a NeoForge pack: mods only, no Bukkit plugins.
-- Real-IP chain: TCPShield -> Velocity (RealIP) -> PCF on ATM10. See docs/current/ARCHITECTURE.md.
+- Minecraft: Crafty servers live in `/srv/appdata/crafty/servers/<uuid>/`
+  (logs: `logs/latest.log`). They all use port 25565, so only one runs at a
+  time. Each server picks its own Java in its Crafty execution command (the
+  container has 8, 11, 17, 21, 25; plain `java` is 25). What a server accepts
+  depends on its loader (NeoForge/Forge/Fabric: mods; Paper: plugins): check
+  before adding anything.
+- Real-IP chain: TCPShield -> Velocity (RealIP) -> the live server, which must
+  accept Velocity modern forwarding (NeoForge: Proxy Compatible Forge; Paper:
+  built in). See docs/current/ARCHITECTURE.md.
 - Velocity: `/opt/velocity`, runs as user `velocity`; logs via `journalctl -u velocity`.
-  ATM10 logs: `.../servers/<uuid>/logs/latest.log`.
-- ATM10 must run on **Java 21** (`/usr/lib/jvm/java-21-openjdk-amd64/bin/java`
-  in Crafty's execution command); the container's default `java` is 25.
 - Test Minecraft pings with `scripts/mc-status-ping.py HOST PORT`.

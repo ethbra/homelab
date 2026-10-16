@@ -3,7 +3,7 @@
 
 Usage: mc-status-ping.py HOST PORT
 Prints the status JSON (favicon shortened). Use it to check the chain:
-  127.0.0.1 25565        -> ATM10 directly (loopback)
+  127.0.0.1 25565        -> the live server directly (loopback)
   play.ethbra.com 25565  -> through TCPShield and Velocity
 Note: pinging Velocity at 192.168.1.22 from the LAN is dropped on purpose
 (RealIP + firewall only accept TCPShield).

@@ -14,11 +14,12 @@ Commands marked `sudo` need your password. Paths are relative to
 |---|---|
 | Restart Velocity | `sudo systemctl restart velocity` |
 | Velocity status / log | `systemctl status velocity --no-pager` / `journalctl -u velocity -f` |
-| Restart ATM10 | **Crafty web UI** (https://192.168.1.22:8111). Don't kill the Java process by hand; Crafty loses track of it |
-| ATM10 log | `tail -f /srv/appdata/crafty/servers/1472e5eb-3e4d-4ce7-b2ac-723f83803f19/logs/latest.log` |
+| Which Minecraft server is live? | `scripts/crafty-servers.py` (all servers, the running one marked, with its Java) |
+| Restart / switch Minecraft server | **Crafty web UI** (https://192.168.1.22:8111): stop the running one, start another (all share 25565). Don't kill the Java process by hand; Crafty loses track of it |
+| Live server's log | `tail -f "$(scripts/crafty-servers.py --path)/logs/latest.log"` |
 | Re-apply the firewall now | `sudo systemctl restart velocity-firewall` |
 | Containers at a glance | `docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'` |
-| Who connected, with what IP? | `grep "logged in with entity" <ATM10 latest.log>` (should show the **player's** IP) and `grep "has connected" velocity/logs/latest.log` |
+| Who connected, with what IP? | `grep "logged in with entity" "$(scripts/crafty-servers.py --path)/logs/latest.log"` (should show the **player's** IP) and `grep "has connected" velocity/logs/latest.log` |
 
 ## Changing a container's config
 
@@ -46,14 +47,14 @@ Gotchas learned the hard way:
 ## Verify the Minecraft chain end to end
 
 ```
-# 1. ATM10 answers directly (loopback). Expect "1.21.1", 9001 max players
+# 1. The live server answers directly (loopback): its own version and MOTD
 python3 scripts/mc-status-ping.py 127.0.0.1 25565
 
 # 2. Through TCPShield -> Velocity. Expect Velocity's MOTD / "Velocity" version name
 python3 scripts/mc-status-ping.py play.ethbra.com 25565
 
 # 3. The real test: join from a client via play.ethbra.com, then
-#    check the ATM10 log shows your real public IP, not 172.18.0.1
+#    check the live server's log shows your real public IP, not 172.18.0.1
 ```
 
 You **cannot** ping Velocity at `192.168.1.22:25565` from the LAN. RealIP and
@@ -61,15 +62,24 @@ the firewall deliberately drop anything not from TCPShield.
 
 ## Minecraft changes
 
-**Add a mod:** ATM10 is NeoForge, so it takes *mods* in `mods/`, not Bukkit
-plugins. Stop the server in Crafty, drop the jar in, start it. For a mod that
-must also exist on clients, make sure players have the same one.
+**Add a mod or plugin:** first check which server is live
+(`scripts/crafty-servers.py`) and its loader. NeoForge/Forge/Fabric take
+*mods* in `mods/`, built for that loader and MC version; Paper/Purpur take
+*plugins* in `plugins/`. Drop the jar in and restart the server from Crafty.
+For a mod that must also exist on clients, make sure players have the same one.
+
+**Switch to another server (or a new one):** stop the running one in Crafty,
+start the other. For it to work behind Velocity it needs `online-mode=false`
+and Velocity modern forwarding with the shared secret (see SERVICES,
+"What any server needs"). For the public map, it also needs BlueMap with its web
+server on 8100. Nothing in the repo needs to change.
 
 **Rotate the forwarding secret:**
 1. `sops secrets/svalbard.yaml` and set a new random `velocity_forwarding_secret`;
    apply with `ansible-playbook site.yml -K --tags velocity`.
-2. Put the same string in `config/atm10/proxy-compatible-forge.toml` (`secret`).
-3. Restart ATM10 (Crafty) and `sudo systemctl restart velocity`.
+2. Put the same string in each server's forwarding config (`config/proxy-compatible-forge.toml`
+   `secret` on NeoForge, `config/paper-global.yml` `proxies.velocity.secret` on Paper).
+3. Restart the live server (Crafty) and `sudo systemctl restart velocity`.
 
 **Update Velocity:** put the new jar in `/opt/velocity/` and its sha256 in
 `ansible/roles/velocity/defaults/main.yml`, then apply (keep `velocity.toml`,
@@ -99,12 +109,12 @@ the script, restart Velocity. Better: reserve the IP in your router.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Join fails: "Unable to connect you to all", Velocity log: `Backend server is online-mode!` | ATM10 has `online-mode=true` | set `online-mode=false`, restart ATM10 |
-| Join fails: "internal server connection error", Velocity: `PluginMessagePacket was too big` | the mod-sync packet from 448 mods exceeds Velocity's default limit | keep `-Dvelocity.max-plugin-message-payload-size.clientbound=16777216` (and `max-known-packs=600`) in `velocity/start.sh` |
+| Join fails: "Unable to connect you to all", Velocity log: `Backend server is online-mode!` | the live server has `online-mode=true` | set `online-mode=false`, restart it |
+| Join fails: "internal server connection error", Velocity: `PluginMessagePacket was too big` | a big mod pack's mod-sync packet exceeds Velocity's default limit | keep `-Dvelocity.max-plugin-message-payload-size.clientbound=16777216` (and `max-known-packs=600`) in `velocity/start.sh` |
 | Velocity won't start: `Can't bind to /0.0.0.0:25565 ... Address already in use` | Docker holds `127.0.0.1:25565`, which blocks a wildcard bind | bind the specific LAN IP in `velocity.toml` |
 | Players kicked / stats weird after adding two forwarding mods | NeoVelocity and PCF both hook login | keep **only** PCF |
-| ATM10 log full of `[pcf/]: Exception in PacketDecoder for /127.0.0.1` | Crafty's status ping closes early; PCF logs it | harmless; see PROGRESS for the log-filter attempt. Don't set Crafty's "Server IP" to the LAN IP (that is Velocity, and Crafty would show ATM10 offline) |
-| Server list shows "Velocity" / 0 of 9001 instead of ATM10's data | passthrough can't work: the pack's compatibility mod appends a stray packet Velocity rejects | expected; MOTD and icon are set by hand in `velocity.toml` and `server-icon.png` |
+| server log full of `[pcf/]: Exception in PacketDecoder for /127.0.0.1` | Crafty's status ping closes early; PCF logs it | harmless; see PROGRESS for the log-filter attempt. Don't set Crafty's "Server IP" to the LAN IP (that is Velocity, and Crafty would show the server offline) |
+| Server list shows "Velocity" / 0 of 9001 instead of the server's data | passthrough can't work with ATM10: its compatibility mod appends a stray packet Velocity rejects | expected; MOTD and icon are set by hand in `velocity.toml` and `server-icon.png` |
 | Plex unreachable over http on the LAN | Plex enforces secure connections for non-local clients | use https |
 | Plex container loops with `Address in use` | the native `plexmediaserver` is running (both want 32400, host network) | stop/disable the native one |
 | Container has no `/dev/nvidia*` after a restart | runtime is pinned at creation | `--force-recreate` |

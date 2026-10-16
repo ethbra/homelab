@@ -43,7 +43,7 @@
     - Crafty:
         icon: crafty-controller.png
         href: https://192.168.1.22:8111
-        description: ATM10 and the other servers
+        description: Minecraft servers
         server: svalbard
         container: crafty-container
         showStats: true

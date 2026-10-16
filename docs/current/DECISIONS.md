@@ -7,6 +7,21 @@
 
 Short records of *why* things are the way they are. Newest first.
 
+## Minecraft setup is server-agnostic; no Java pin (2026-10-15)
+- **Problem:** the repo named one server (the old "Cam ATM10" UUID) in CLAUDE.md,
+  the RUNBOOK and the `stacks` role, and asserted it ran Java 21. The live
+  server had become ATM10-8-2. A mod was installed into the wrong server, and
+  the Java check had been checking a server that wasn't running.
+- **Decision:** nothing names a server. `scripts/crafty-servers.py` asks
+  Crafty which one is running. The only Minecraft check left in the role is
+  the one that holds for every server: 25565 published on loopback only.
+  Requirements for any server behind Velocity are listed in SERVICES.
+- **Java:** dropped the "must be Java 21" rule. Java is chosen per server in
+  Crafty's execution command (rlcraft needs 8). ATM10-8-2's
+  `startserver.sh` requires >= 21 and runs on the container's 25 with no
+  Java-related errors in its log.
+- **Kept:** every Crafty server (owner's choice).
+
 ## Velocity passthrough off; MOTD and icon set by hand (2026-10-01)
 - **Problem:** with passthrough on, the server list silently showed Velocity's
   defaults. Cause: after the normal status reply, the pack's Better

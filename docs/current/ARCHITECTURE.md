@@ -14,7 +14,7 @@
 | CPU / GPU | i7-9700K (8 cores) / GeForce RTX 2070 (8 GB), driver 535.309.01 (Debian non-free) |
 | Docker | 29.x, with `nvidia` set as the **default runtime** |
 | Orchestration | Docker Compose: `stacks/<app>/compose.yaml`, deployed to `/opt/homelab/stacks` by the `stacks` role |
-| Host Java | Temurin 25 (runs Velocity only; ATM10 uses the JVM inside the Crafty container) |
+| Host Java | Temurin 25 (runs Velocity only; Minecraft servers use the JVMs inside the Crafty container, chosen per server) |
 
 ### Storage
 
@@ -36,7 +36,7 @@ an empty `/DATA`.
 `/DATA/AppData` holds only `crafty/backups` (on HDD_A, bind-mounted directly).
 The pre-cutover copies were deleted 2026-10-03.
 
-## Traffic flow: Minecraft (ATM10)
+## Traffic flow: Minecraft (whichever server Crafty runs)
 
 ```
  Player
@@ -53,20 +53,23 @@ The pre-cutover copies were deleted 2026-10-03.
  127.0.0.1:25565      loopback only, published by the crafty-container
    |  (Docker bridge crafty_default, gateway 172.18.0.1)
    v
- ATM10 server (NeoForge 21.1.209, MC 1.21.1) inside crafty-container
-      Proxy Compatible Forge mod: accepts forwarded data only from 172.18.0.1
-      with the shared secret. online-mode=false (Velocity already authenticated).
+ the live server inside crafty-container (scripts/crafty-servers.py says which)
+      accepts Velocity modern forwarding with the shared secret (NeoForge: the
+      PCF mod, also only from 172.18.0.1; Paper: built in).
+      online-mode=false (Velocity already authenticated).
 ```
 
 Key properties, all of which must hold (see NETWORK-AND-SECURITY for the why):
 
-1. ATM10's port is published on **loopback only**.
+1. The Minecraft port (25565) is published on **loopback only**, whichever
+   server is running.
 2. Velocity binds the **specific LAN IP**, not `0.0.0.0` (a wildcard bind
    collides with Docker's `127.0.0.1:25565`).
 3. The Velocity port is firewalled to TCPShield's ranges (`TCPSHIELD_MC` chain).
-4. The forwarding secret is identical in Velocity and PCF.
+4. The forwarding secret is identical in Velocity and the server's forwarding
+   config (PCF or Paper).
 
-Crafty's own status polling talks to ATM10 directly inside the container
+Crafty's own status polling talks to the server directly inside the container
 (`127.0.0.1:25565` in its server record). It never goes through Velocity.
 
 ## Traffic flow: media stack
@@ -103,9 +106,9 @@ reach each other via `192.168.1.22:<port>`.
 | Container definitions (ports, mounts, GPU) | `stacks/<app>/compose.yaml` -> `/opt/homelab/stacks/<app>/` |
 | Container secrets (Transmission login) | `secrets/svalbard.yaml` (SOPS) -> root-only `/opt/homelab/stacks/<app>/.env` |
 | Storage pool, drive mounts | `ansible/roles/storage` -> `/etc/fstab` |
-| ATM10 world, mods, config | `/srv/appdata/crafty/servers/<uuid>/` |
+| Minecraft servers (worlds, mods/plugins, config) | `/srv/appdata/crafty/servers/<uuid>/` (Crafty's database lists them; `scripts/crafty-servers.py`) |
 | Velocity | `ansible/roles/velocity` -> `/opt/velocity/` |
 | Firewall (boot-time) | `ansible/roles/firewall` -> `/usr/local/sbin/homelab-tcpshield-firewall`, run by `velocity-firewall.service` (TCPShield chain + `raw` blocklist) |
 | DNS (`ethbra.com`) | `tofu/dns.tf` (OpenTofu, applied by hand with `scripts/tofu.sh`) |
-| Tunnel ingress | Cloudflare (not on disk); empty as of 2026-10-07. To be declared in `tofu/` with the first hostname |
+| Tunnel ingress, Access | `tofu/tunnel.tf`, `tofu/access.tf` (OpenTofu, applied by hand) |
 | TCPShield backend/domain | TCPShield dashboard (not on disk) |

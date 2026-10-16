@@ -36,16 +36,15 @@ homelab/
     check-sops-encrypted.sh  used by pre-commit and CI
     tofu.sh                  runs tofu with its secrets from SOPS (owner only)
     obsolete/                superseded scripts (the roles replaced them), kept for reference
-  stacks/<app>/compose.yaml  the seven container stacks (deployed by the stacks role)
-  config/                    local-only symlinks to live files not yet managed (ATM10)
+  stacks/<app>/              the container stacks: compose.yaml, optional config/ (stacks role)
   .github/workflows/ci.yml   CI: lint, Ansible and tofu checks, secret scanning (never deploys)
   .sops.yaml                 who can decrypt files in secrets/
   .pre-commit-config.yaml    the same checks, run locally before each commit
 ```
 
-`config/` is local only and gitignored: it links to live files that no role
-manages yet (ATM10's config). Each link goes away when
-its phase moves that config into the repo.
+Minecraft servers are not in the repo: Crafty owns them, and any of them can
+be the live one. `scripts/crafty-servers.py` lists them and shows which one is
+running (`--path` prints its directory).
 
 ## Changing something that a role manages
 

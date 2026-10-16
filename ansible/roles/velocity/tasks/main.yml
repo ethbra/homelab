@@ -100,7 +100,7 @@
     label: "{{ item.dest }}"
   notify: Restart velocity
 
-# Must match the secret in ATM10's proxy-compatible-forge.toml.
+# Must match the secret in the live server's forwarding config (PCF or Paper).
 - name: Forwarding secret
   ansible.builtin.copy:
     content: "{{ velocity_forwarding_secret }}"

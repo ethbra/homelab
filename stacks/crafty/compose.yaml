@@ -1,14 +1,15 @@
 # Deployed by the stacks role to /opt/homelab/stacks/crafty.
 #
-# INVARIANT: ATM10 (online-mode=false) is published on 127.0.0.1:25565 only.
+# INVARIANT: the Minecraft server (online-mode=false, whichever one Crafty runs)
+# is published on 127.0.0.1:25565 only.
 # Velocity on the host is its only client; the stacks role fails the run if
 # 25565 is published on anything else.
 #
-# The project name and subnet are pinned: PCF on ATM10 trusts the network's
+# The project name and subnet are pinned: PCF on NeoForge servers trusts the network's
 # gateway (approvedProxyHosts = ["172.18.0.1"]), so it must not change.
 # Unprivileged (privileged: true was a workaround for an old Java problem).
-# Panel on 8111; BlueMap's web server (a mod on ATM10) on 127.0.0.1:8100 for
-# nginx only (play.ethbra.com). Crafty's other ports (8123, 19132/udp) and
+# Panel on 8111; BlueMap's web server (on whichever server has it) on
+# 127.0.0.1:8100 for nginx only (play.ethbra.com). Crafty's other ports (8123, 19132/udp) and
 # 25566+ stay unpublished.
 name: crafty
 services:

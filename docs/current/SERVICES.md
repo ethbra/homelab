@@ -51,23 +51,32 @@ leftovers; Ollama was removed 2026-10-02, data kept.
 
 ### Crafty-managed servers
 
-| Name | Type | Notes |
-|---|---|---|
-| **Cam ATM10** | NeoForge 21.1.209, MC 1.21.1 | **All the Mods 10 v4.12**, 448 mod jars, UUID `1472e5eb-3e4d-4ce7-b2ac-723f83803f19`, `-Xms16G -Xmx16G` |
-| rlcraft, Vanilla (Purpur 1.21.10), Plugins Test (Paper) | | stopped; **all four Crafty records use `127.0.0.1:25565`, so only one can run at a time** |
+Any of these can be the live server; the owner switches between them. **Which
+one is running is not recorded here**: ask `scripts/crafty-servers.py` (it
+reads Crafty's database and the container's processes). All of them use
+`127.0.0.1:25565`, so only one runs at a time. Each one picks its own Java in
+its Crafty execution command.
 
-ATM10 files worth knowing (all under `/srv/appdata/crafty/servers/<uuid>/`,
-linked from `config/atm10/`):
+Snapshot 2026-10-15 (names and UUIDs change rarely; state changes often):
 
-| File | Why it matters |
+| Name | UUID | Loader / pack | Java | Auto-start |
+|---|---|---|---|---|
+| ATM10-8-2 | `7e6ceae2-b42d-4050-8c9d-18ae6d5ff250` | NeoForge 21.1.251, All the Mods 10 v8.2 (MC 1.21.1), 466 mods incl. PCF 1.3.1 and BlueMap 5.7 | `java` (25) | yes |
+| Cam ATM10 | `1472e5eb-3e4d-4ce7-b2ac-723f83803f19` | NeoForge 21.1.209, All the Mods 10 v4.12 | 21 | no |
+| rlcraft | `9669b6a3-592e-4959-92cb-84129b5f9e76` | Forge (RLCraft 2.9) | 8 | no |
+| Vanilla | `796e824d-eb9b-48cb-aa8e-fdc3a2471781` | Purpur 1.21.10 | 21 | no |
+| Plugins Test | `6a63dc93-96ef-44d6-9b9a-589ef5abb814` | Paper | `java` (25) | no |
+
+**What any server needs to work behind Velocity** (`/srv/appdata/crafty/servers/<uuid>/`):
+
+| Setting | Why |
 |---|---|
-| `server.properties` | `online-mode=false` is **required** behind the proxy |
-| `config/proxy-compatible-forge.toml` | forwarding mode/secret and `approvedProxyHosts = ["172.18.0.1"]` |
-| `config/bcc-common.toml` | pack name/version (this is where "4.12" comes from) |
-| `user_jvm_args.txt` | heap/GC flags and the `-Dlog4j2.configurationFile=` line (currently ineffective) |
-| `log4j2-custom.xml` | log filter for Crafty's ping noise (currently not applied by the server) |
+| `server.properties`: `online-mode=false` | Velocity authenticates players; a backend that also does aborts the join |
+| Velocity modern forwarding, same secret as Velocity | NeoForge/Forge 1.20.2+: Proxy Compatible Forge (`config/proxy-compatible-forge.toml`, `approvedProxyHosts = ["172.18.0.1"]`). Paper/Purpur: `config/paper-global.yml` `proxies.velocity` (enabled, online-mode, secret). Fabric: FabricProxy-Lite. Old Forge (e.g. 1.12 RLCraft) and plain vanilla can't do modern forwarding |
+| Port 25565 in Crafty | the only port published (loopback) |
 
-Mods added by us: `proxy-compatible-forge-1.3.1.jar`.
+Optional per server: BlueMap (mod for NeoForge/Fabric, plugin for Paper) with
+its web server on 8100, for the public map. Only the running server serves it.
 
 ### Velocity proxy (`/opt/velocity/`, managed by `ansible/roles/velocity`)
 
@@ -76,8 +85,8 @@ Mods added by us: `proxy-compatible-forge-1.3.1.jar`.
 | `velocity.jar` | Velocity 4.2.0 |
 | `velocity.toml` | bind `192.168.1.22:25565`, modern forwarding, server `all` -> `127.0.0.1:25565`, MOTD/cap set by hand, passthrough off |
 | `forwarding.secret` | shared secret (**secret**) |
-| `start.sh` | JVM flags, including raised packet limits for the big mod pack |
-| `server-icon.png` | copied from ATM10, shown in the server list |
+| `start.sh` | JVM flags, including raised packet limits (big mod packs' sync packets exceed the default) |
+| `server-icon.png` | shown in the server list (copied from a server, by hand) |
 | `plugins/TCPShield-2.8.1.jar` | RealIP (works as the Velocity plugin) |
 | `plugins/tcpshield/config.toml` | `only-allow-proxy-connections = true` |
 | (journal) | proxy output: `journalctl -u velocity` |

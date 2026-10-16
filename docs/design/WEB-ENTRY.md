@@ -36,7 +36,7 @@ Internet ── Cloudflare (Access: Google) ── tunnel ── cloudflared ─
                                                                       └─ play.ethbra.com   -> BlueMap   127.0.0.1:8100
 LAN ── 192.168.1.22:3000 (Homepage), :8111 (Crafty), :5055, :8989, ... (direct, no Cloudflare)
 
-Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -> ATM10 (unchanged)
+Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -> live server (unchanged)
 ```
 
 ## Pieces
@@ -111,14 +111,19 @@ Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -
 
 ### BlueMap
 
-- BlueMap's NeoForge build for MC 1.21.1 is added to ATM10 as a server-side
-  mod (clients don't need it). Its web server is on `8100` in the container.
-- Crafty compose: publish **`127.0.0.1:8100:8100`** (loopback only; nginx
-  reaches it). This is a Crafty compose edit, so run the ATM10 port check
-  from CLAUDE.md (`docker inspect crafty-container`) before and after.
-- Expect a long first render on a 448-mod world (CPU and disk). Modded blocks
-  may render without textures. Tune the render limits in BlueMap's config,
-  which goes in the repo once it's settled.
+- BlueMap belongs to a **server**, not to the infrastructure: the map shows
+  whichever server is running and has BlueMap with its web server on `8100`
+  (mod for NeoForge/Fabric, plugin for Paper). A server without it means
+  `play.ethbra.com` shows nginx's 502 until one with it runs. Nothing in the
+  repo changes when switching servers.
+- Crafty compose: **`127.0.0.1:8100:8100`** (loopback only; nginx reaches it).
+- Per-server setup (`config/bluemap/` in the server's directory, written on
+  first start): `accept-download: true`, `render-thread-count: 2` (leave cores
+  for the game), `metrics: false`; then `bluemap reload`. Live player markers on
+  (owner's choice).
+- First render of a big modded world takes hours; modded blocks may render
+  without textures.
+- Done 2026-10-15 for ATM10-8-2 (BlueMap 5.7-neoforge).
 
 ### Minecraft DNS: SRV, so `play.ethbra.com` can serve the map
 

@@ -87,12 +87,11 @@ Left over:
     - [x] Tofu: Google IdP + Access apps (`homelab`, `*.ethbra.com` safety
           net), ingress + proxied DNS for `dash`, `crafty`: applied
           2026-10-15; Google sign-in works
-    - [ ] BlueMap mod on ATM10; Crafty compose `127.0.0.1:8100` (ATM10 port
-          check before/after); nginx `play` block: prepared 2026-10-15
-          (5.7-neoforge staged). Needs an ATM10 restart window: push, jar
-          into `mods/`, start ATM10, set `core.conf`, `bluemap reload`
+    - [x] BlueMap on the live server (ATM10-8-2, 5.7-neoforge); Crafty
+          compose `127.0.0.1:8100`; nginx `play` block (2026-10-15). Owner:
+          `bluemap reload` to start the first render
     - [x] Owner: `mc.ethbra.com` added in TCPShield (2026-10-15)
-    - [ ] Tofu: `mc` CNAME + SRV
+    - [ ] Tofu: `mc` CNAME + SRV (written 2026-10-15, plan 2 to add)
           `_minecraft._tcp.play`; test a join; then `play` to the tunnel
           with an Access bypass app
   - [x] `tofu fmt`/`validate` in CI (2026-10-13; no secrets needed)
@@ -110,7 +109,7 @@ Left over:
 
 - [x] Rotate the Cloudflare tunnel token (done 2026-10-02 23:41; 4 connections
       healthy on the new token). Steps kept below for next time.
-- [x] Crafty: ATM10's execution command uses Java 21 (2026-10-03)
+- [x] ~~Crafty: ATM10's execution command uses Java 21~~ (2026-10-03; rule dropped 2026-10-15: Java is per server)
 - [x] Media-apps login in SOPS (2026-10-03)
 - [x] Deleted `~/projects/active/velocity` (2026-10-13)
 - [x] `/DATA/Media/Shared` dealt with and removed (2026-10-13)
