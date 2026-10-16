@@ -21,6 +21,15 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-15 - tunnel import written (plan only)
+- `tofu/tunnel.tf`: `cloudflare_zero_trust_tunnel_cloudflared.host` (`Host`,
+  `prevent_destroy`) and its `_config` (no ingress; remote config version 0),
+  with `import` blocks. Resources generated with `plan -generate-config-out`,
+  then tidied. `scripts/tofu.sh plan`: 2 to import, 0 to add/change/destroy.
+  No secret in tofu (`tunnel_secret` unset; the token stays in SOPS).
+- Owner next: `scripts/tofu.sh apply`, then commit `tofu/tunnel.tf` and the
+  re-encrypted `tofu/terraform.tfstate`.
+
 ### 2026-10-13 - migration scaffolding removed, tofu in CI, tunnel kept
 - Decided: keep the tunnel `Host` and `cloudflared`. Tofu declares Cloudflare's
   side (DNS, tunnel ingress, later Access policies); `cloudflared` is the

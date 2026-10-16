@@ -4,7 +4,7 @@ Where the infrastructure-as-code work stands and what comes next, in order.
 The design is in [design/IAC-DESIGN.md](design/IAC-DESIGN.md); the history is in
 [../PROGRESS.md](../PROGRESS.md). Update this file whenever a step is done.
 
-Last updated: 2026-10-13.
+Last updated: 2026-10-15.
 
 ## Where we are
 
@@ -61,11 +61,13 @@ Left over:
         2026-10-12: no changes)
   - [x] Tunnel's future decided (2026-10-13): **keep** it and the
         `cloudflared` role; hostnames and policies go into tofu
-  - [ ] Import the tunnel into tofu: `cloudflare_zero_trust_tunnel_cloudflared`
-        (`Host`) and its `cloudflare_zero_trust_tunnel_cloudflared_config`
-        (empty ingress + the `http_status:404` catch-all), with `import`
-        blocks; plan must show imports only. The token stays in SOPS and
-        the `cloudflared` role, not in tofu outputs
+  - [x] Import the tunnel into tofu: `tofu/tunnel.tf` (2026-10-15),
+        `cloudflare_zero_trust_tunnel_cloudflared` (`Host`) and its
+        `_config` (no ingress yet), with `import` blocks; plan: 2 to
+        import, 0 to add/change/destroy. The token stays in SOPS and the
+        `cloudflared` role, not in tofu
+  - [ ] Owner: `scripts/tofu.sh apply` (imports only), then commit
+        `tofu/tunnel.tf` and the re-encrypted `tofu/terraform.tfstate`
   - [ ] First hostname: ingress rule + proxied CNAME to
         `<tunnel id>.cfargotunnel.com` + an Access application/policy in
         front of it, all in one tofu change
