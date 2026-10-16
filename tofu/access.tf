@@ -76,3 +76,28 @@ resource "cloudflare_zero_trust_access_application" "wildcard" {
     precedence = 1
   }]
 }
+
+# The map is public: anyone, no login. More specific than the *.ethbra.com
+# catch-all, so it wins for play.ethbra.com.
+resource "cloudflare_zero_trust_access_policy" "public" {
+  account_id = local.account_id
+  name       = "Public"
+  decision   = "bypass"
+  include = [{
+    everyone = {}
+  }]
+}
+
+resource "cloudflare_zero_trust_access_application" "map" {
+  account_id = local.account_id
+  name       = "map (BlueMap)"
+  type       = "self_hosted"
+  destinations = [
+    { type = "public", uri = "play.ethbra.com" },
+  ]
+  app_launcher_visible = false
+  policies = [{
+    id         = cloudflare_zero_trust_access_policy.public.id
+    precedence = 1
+  }]
+}

@@ -21,6 +21,28 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-15 - play.ethbra.com serves the map; game unaffected
+- Owner applied phase 2. `https://play.ethbra.com` shows BlueMap without a
+  login, and joining `play.ethbra.com` still works (through the SRV).
+- The map opened on the Aether: every map had `sorting: 0` (Nether 100, End
+  200), so ties go alphabetically. Set `sorting: -1` in the live server's
+  `config/bluemap/maps/world.conf`; needs `bluemap reload`. This is
+  per-server, in that server's BlueMap config, not in the repo.
+
+### 2026-10-15 - SRV phase 1 verified; phase 2 written
+- First join failed: "Invalid hostname" from TCPShield. Probing the login
+  handshake showed `play.ethbra.com` passed and `mc.ethbra.com` didn't. Clients
+  send the **SRV target** as the handshake hostname, and `mc` was added in
+  TCPShield but not **verified**. Owner verified it; both now reach Velocity.
+  (The earlier "mc status ping answers" was TCPShield's placeholder reply, not
+  Velocity: check the version name.) A real join through the SRV at 20:22
+  logged a public IP: forwarding intact.
+- Phase 2 in tofu: `play` -> proxied CNAME to the tunnel; Access bypass policy
+  "Public" + application `map (BlueMap)` for `play.ethbra.com`; tunnel ingress
+  `play.ethbra.com` -> nginx (no Access token check). `play` depends on the
+  bypass app. Plan: 2 to add, 2 to change, 0 to destroy. Rollback: `play`
+  back to the TCPShield target, DNS only.
+
 ### 2026-10-15 - Minecraft SRV, phase 1 applied
 - Owner applied. Live at 1.1.1.1: `mc` -> TCPShield, SRV `0 5 25565
   mc.ethbra.com`. `mc-status-ping.py mc.ethbra.com 25565` answers through

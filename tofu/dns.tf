@@ -4,16 +4,20 @@ locals {
   zone_id = "2c1a71a65eeb159469759acb680645d8" # ethbra.com
 }
 
-# Minecraft: players connect to play.ethbra.com -> TCPShield -> Velocity.
-# DNS only (TCPShield is the proxy, not Cloudflare).
+# play.ethbra.com in a browser: the public BlueMap (tunnel -> nginx -> BlueMap).
+# Players also type play.ethbra.com; their clients follow the SRV record below
+# to mc.ethbra.com (TCPShield) and never use this CNAME.
+# Rollback: content = the TCPShield target, proxied = false.
 resource "cloudflare_dns_record" "play" {
   zone_id = local.zone_id
   name    = "play.ethbra.com"
   type    = "CNAME"
-  content = "29a07eabe84abc255812d194f34d468d.ipv4.tcpshield.com"
-  proxied = false
+  content = "${local.tunnel_id}.cfargotunnel.com"
+  proxied = true
   ttl     = 1 # automatic
-  comment = "TCPShield Minecraft Proxy"
+  comment = "Tunnel Host -> nginx -> BlueMap; public (Access bypass)"
+
+  depends_on = [cloudflare_zero_trust_access_application.map]
 }
 
 import {
@@ -42,8 +46,8 @@ resource "cloudflare_dns_record" "tunnel" {
 
 # Minecraft via SRV (docs/design/WEB-ENTRY.md), so play.ethbra.com can later
 # serve the map over HTTPS while players keep typing play.ethbra.com.
-# Phase 1: mc + SRV next to the unchanged play CNAME (clients prefer the SRV).
-# mc must also be in TCPShield's domain list (done 2026-10-15).
+# Clients send the SRV target (mc.ethbra.com) as the handshake hostname, so mc
+# must be in TCPShield's domain list *and verified* there (done 2026-10-15).
 resource "cloudflare_dns_record" "mc" {
   zone_id = local.zone_id
   name    = "mc.ethbra.com"

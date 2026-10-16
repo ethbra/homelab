@@ -14,7 +14,7 @@ Last updated: 2026-10-15.
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
 | 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
-| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS, tunnel and Access in OpenTofu, validated in CI; `dash` and `crafty` public behind Google login (2026-10-15); BlueMap next |
+| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS, tunnel and Access in OpenTofu, validated in CI; `dash`, `crafty` behind Google login and the public map on `play.ethbra.com` (2026-10-15) |
 
 ## 0-3. Done
 
@@ -91,9 +91,10 @@ Left over:
           compose `127.0.0.1:8100`; nginx `play` block (2026-10-15). Owner:
           `bluemap reload` to start the first render
     - [x] Owner: `mc.ethbra.com` added in TCPShield (2026-10-15)
-    - [ ] Tofu: `mc` CNAME + SRV (written 2026-10-15, plan 2 to add)
-          `_minecraft._tcp.play`; test a join; then `play` to the tunnel
-          with an Access bypass app
+    - [x] Tofu: `mc` CNAME + SRV `_minecraft._tcp.play`; join tested
+          (2026-10-15; `mc` had to be *verified* in TCPShield)
+    - [x] `play` to the tunnel with an Access bypass app (2026-10-15):
+          map public on `https://play.ethbra.com`, joins unaffected
   - [x] `tofu fmt`/`validate` in CI (2026-10-13; no secrets needed)
 - [ ] Later: agent also requires green CI for the commit (GitHub status API)
 

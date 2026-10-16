@@ -4,7 +4,7 @@
 > [../current/](../current/); [../NEXT-STEPS.md](../NEXT-STEPS.md) tracks the
 > steps and [PROGRESS.md](../../PROGRESS.md) records them as they land.
 
-Status: decided 2026-10-15; not started.
+Status: live 2026-10-15 (`dash`, `crafty` behind Access; public map on `play.ethbra.com`; game via SRV).
 
 ## Decisions (owner, 2026-10-15)
 
@@ -119,8 +119,10 @@ Players ── play.ethbra.com (SRV) -> mc.ethbra.com -> TCPShield -> Velocity -
 - Crafty compose: **`127.0.0.1:8100:8100`** (loopback only; nginx reaches it).
 - Per-server setup (`config/bluemap/` in the server's directory, written on
   first start): `accept-download: true`, `render-thread-count: 2` (leave cores
-  for the game), `metrics: false`; then `bluemap reload`. Live player markers on
-  (owner's choice).
+  for the game), `metrics: false`; overworld `sorting: -1` in
+  `maps/world.conf` (the map opens on the lowest; ties go alphabetically, so
+  without it a modded pack opens on e.g. the Aether); then `bluemap reload`.
+  Live player markers on (owner's choice).
 - First render of a big modded world takes hours; modded blocks may render
   without textures.
 - Done 2026-10-15 for ATM10-8-2 (BlueMap 5.7-neoforge).
@@ -145,7 +147,8 @@ The home IP stays hidden and no port forwards are needed.
 coexist with the current CNAME.
 
 1. Owner: add `mc.ethbra.com` to the TCPShield network's domains, keeping
-   `play` (done 2026-10-15). Which hostname the client sends in the handshake decides which one
+   `play`, **and verify it**. Clients send the SRV target as the handshake
+   hostname, so an unverified `mc` gives "Invalid hostname" (done 2026-10-15). Which hostname the client sends in the handshake decides which one
    TCPShield checks, so allow both.
 2. Tofu: add `mc` + the SRV, with `play` unchanged. Test:
    `scripts/mc-status-ping.py mc.ethbra.com 25565`, then a real client join

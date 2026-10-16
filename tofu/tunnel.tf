@@ -60,6 +60,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "host" {
         service        = local.nginx
         origin_request = { access = local.access_required }
       },
+      # Public map: no Access token to check (bypass).
+      {
+        hostname = "play.ethbra.com"
+        service  = local.nginx
+      },
       { service = "http_status:404" },
     ]
   }

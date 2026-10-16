@@ -51,7 +51,8 @@ Gotchas learned the hard way:
 python3 scripts/mc-status-ping.py 127.0.0.1 25565
 
 # 2. Through TCPShield -> Velocity. Expect Velocity's MOTD / "Velocity" version name
-python3 scripts/mc-status-ping.py play.ethbra.com 25565
+python3 scripts/mc-status-ping.py mc.ethbra.com 25565   # the SRV target; play itself is now the map
+#    (a TCPShield placeholder reply, version "Unknown"/0 players, means mc isn't accepted by TCPShield)
 
 # 3. The real test: join from a client via play.ethbra.com, then
 #    check the live server's log shows your real public IP, not 172.18.0.1

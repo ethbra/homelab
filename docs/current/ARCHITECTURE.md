@@ -40,7 +40,8 @@ The pre-cutover copies were deleted 2026-10-03.
 
 ```
  Player
-   |  play.ethbra.com  (DNS CNAME -> TCPShield)
+   |  play.ethbra.com  (SRV _minecraft._tcp.play -> mc.ethbra.com, CNAME -> TCPShield;
+   |                    the client sends "mc.ethbra.com" in its handshake)
    v
  TCPShield edge  --- DDoS protection; hides the home IP; adds the real player IP
    |  only 198.178.119.0/24 and 104.234.6.0/25 may reach us

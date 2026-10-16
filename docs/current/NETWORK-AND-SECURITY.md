@@ -17,7 +17,7 @@
 | Home WAN IP | dynamic (value deliberately not recorded in this repo; check with `curl -4 ifconfig.me`). **No DDNS is running** (No-IP removed 2026-10-01) |
 | Router: static port-forward | **only** TCP `25565` -> `192.168.1.22:25565` (confirmed by owner, 2026-10-01) |
 | Router: dynamic (UPnP / NAT-PMP) | **Plex** asks the router for WAN port `17511` and reports itself reachable from the internet (seen in its log 2026-10-01); **Transmission** has `port-forwarding-enabled: true` for peer port `51413`. These are *not* static forwards, so they won't show up in a forward list. Check the router's UPnP table, or turn UPnP off |
-| Public Minecraft hostname | `play.ethbra.com` -> CNAME to TCPShield |
+| Public Minecraft hostname | `play.ethbra.com`: the game resolves the SRV `_minecraft._tcp.play` -> `mc.ethbra.com` (CNAME to TCPShield; must stay verified in TCPShield). A browser gets the public map (proxied CNAME to the tunnel, Access bypass) |
 | TCPShield source ranges | `198.178.119.0/24`, `104.234.6.0/25` (IPv4 only; list at https://tcpshield.com/v4/) |
 | Docker bridges | `docker0` 172.17/16, `crafty_default` 172.18.0.0/16 (gw `172.18.0.1`), others 172.19, 172.21 |
 
