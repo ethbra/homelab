@@ -14,7 +14,7 @@ Last updated: 2026-10-15.
 | 2a. Roles that mirror the live host | done |
 | 2b. Host changes | done: secrets via SOPS, SSH key-only, Samba/xrdp/ollama/`admin` removed, Velocity in `/opt/velocity` as its own user, firewall script out of `/home`. Cleanup applied 2026-10-03 |
 | 3. Storage + containers out of CasaOS | **done 2026-10-03**: cutover, old copies deleted, CasaOS removed |
-| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS in OpenTofu (2026-10-12), validated in CI; tunnel ingress next |
+| 4. Pull agent, drift check, Cloudflare in OpenTofu | pull agent + drift check **live 2026-10-04** (pushes to `main` deploy); DNS and tunnel in OpenTofu (2026-10-12, 2026-10-15), validated in CI; first hostname next |
 
 ## 0-3. Done
 
@@ -66,16 +66,37 @@ Left over:
         `_config` (no ingress yet), with `import` blocks; plan: 2 to
         import, 0 to add/change/destroy. The token stays in SOPS and the
         `cloudflared` role, not in tofu
-  - [ ] Owner: `scripts/tofu.sh apply` (imports only), then commit
-        `tofu/tunnel.tf` and the re-encrypted `tofu/terraform.tfstate`
-  - [ ] First hostname: ingress rule + proxied CNAME to
-        `<tunnel id>.cfargotunnel.com` + an Access application/policy in
-        front of it, all in one tofu change
+  - [x] Owner: apply (imports only) and commit (d4f2722, CI green);
+        plan on 2026-10-15: no changes
+  - [ ] Web entry point (decided 2026-10-15; design in
+        [design/WEB-ENTRY.md](design/WEB-ENTRY.md)): nginx behind the
+        tunnel, Access with Google login; public `dash`, `crafty` and the
+        BlueMap map on `play.ethbra.com`. Plex, the -arrs and Transmission
+        never go through the tunnel. In order:
+    - [ ] `stacks/homepage/` on the LAN (`192.168.1.22:3000`), read-only
+          docker socket proxy, widget keys from SOPS
+    - [ ] `stacks/nginx/` on `127.0.0.1:8080`: `dash`, `crafty`,
+          `default_server` 444
+    - [x] Owner (2026-10-15): token permissions added (Access: Apps and
+          Policies Edit; Organizations, Identity Providers, and Groups Edit;
+          verified by API); team domain `ethbra.cloudflareaccess.com`;
+          Google OAuth client, `google_oauth_client_id`/`_secret` in
+          `secrets/cloudflare.yaml`
+    - [ ] Tofu: Google IdP + Access apps (`homelab`, `*.ethbra.com` safety
+          net), then ingress + proxied DNS for `dash`, `crafty`
+    - [ ] BlueMap mod on ATM10; Crafty compose `127.0.0.1:8100` (ATM10 port
+          check before/after); nginx `play` block
+    - [x] Owner: `mc.ethbra.com` added in TCPShield (2026-10-15)
+    - [ ] Tofu: `mc` CNAME + SRV
+          `_minecraft._tcp.play`; test a join; then `play` to the tunnel
+          with an Access bypass app
   - [x] `tofu fmt`/`validate` in CI (2026-10-13; no secrets needed)
 - [ ] Later: agent also requires green CI for the commit (GitHub status API)
 
 ## POCs (parked)
 
+- Local DNS for the nice names on the LAN (e.g. AdGuard Home); the Orbi
+  can't host custom records
 - Jellyfin as an eighth stack next to Plex (free NVIDIA transcoding), with
   `/DATA/Media` read-only; Jellyseerr would replace Overseerr if it stays
 - vcclient (GPU voice changer), removed 2026-10-03; rebuild if wanted
@@ -119,6 +140,11 @@ Left over:
 - ~~OpenTofu state~~ decided 2026-10-04: encrypted (enforced), committed; applied by hand
 - TCPShield backend: keep the literal IP, or a DDNS hostname (see PROGRESS)
 - ~~Cloudflare tunnel~~ decided 2026-10-13: keep; ingress and policies in tofu
+- ~~What goes behind the tunnel~~ decided 2026-10-15: `dash`, `crafty` (Google
+  login via Access) and the public BlueMap on `play.ethbra.com` (game via SRV),
+  all through nginx; Plex, the -arrs, Transmission LAN only. See
+  [design/WEB-ENTRY.md](design/WEB-ENTRY.md)
+- Container control (start/stop) from a dashboard: later, a separate tool
 - Router (Orbi RBR50): not manageable as code (no API/provider). Its expected
   state (reservation, the one forward, UPnP) stays in NETWORK-AND-SECURITY.
   Open: turn UPnP off? Revisit as code only if it is replaced by

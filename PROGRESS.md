@@ -21,14 +21,33 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
-### 2026-10-15 - tunnel import written (plan only)
+### 2026-10-15 - decided: web entry point (nginx + Access + BlueMap)
+- Owner decided, after comparing options: nginx on `127.0.0.1:8080` behind the
+  tunnel, routed by **subdomain** (paths rejected: Crafty/Overseerr can't run
+  under a prefix). Public through Cloudflare Access with Google login: `dash`
+  (Homepage) and `crafty`. Public without login: the BlueMap web map on
+  `play.ethbra.com`. The game moves to an SRV record (`_minecraft._tcp.play` ->
+  `mc.ethbra.com` -> TCPShield), so one name serves both. Plex, the -arrs and
+  Transmission are never reachable through the tunnel. Everything stays
+  reachable on the LAN directly.
+- Homepage is read-only for Docker (status/stats, via a socket proxy); start/stop
+  later, separately. Push approval comes from Google's own 2SV (Google prompts).
+- Design: `docs/design/WEB-ENTRY.md` (replaces a same-day Homepage-only draft).
+- Owner prerequisites done: API token now also has Access: Apps and Policies
+  Edit and Access: Organizations, Identity Providers, and Groups Edit (each
+  verified by API, zone/DNS still fine); team domain
+  `ethbra.cloudflareaccess.com`; Google OAuth client ID/secret in
+  `secrets/cloudflare.yaml` (checked by key name and shape only);
+  `mc.ethbra.com` added in TCPShield.
+
+### 2026-10-15 - tunnel imported into tofu
 - `tofu/tunnel.tf`: `cloudflare_zero_trust_tunnel_cloudflared.host` (`Host`,
   `prevent_destroy`) and its `_config` (no ingress; remote config version 0),
   with `import` blocks. Resources generated with `plan -generate-config-out`,
   then tidied. `scripts/tofu.sh plan`: 2 to import, 0 to add/change/destroy.
   No secret in tofu (`tunnel_secret` unset; the token stays in SOPS).
-- Owner next: `scripts/tofu.sh apply`, then commit `tofu/tunnel.tf` and the
-  re-encrypted `tofu/terraform.tfstate`.
+- Owner applied (imports only) and pushed as d4f2722 (signed); CI green.
+  `scripts/tofu.sh plan` afterwards: no changes. The tunnel is managed.
 
 ### 2026-10-13 - migration scaffolding removed, tofu in CI, tunnel kept
 - Decided: keep the tunnel `Host` and `cloudflared`. Tofu declares Cloudflare's
