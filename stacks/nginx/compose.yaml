@@ -1,0 +1,20 @@
+# Deployed by the stacks role to /opt/homelab/stacks/nginx; config/ is
+# deployed next to it from stacks/nginx/config/ and replaces the image's
+# conf.d (read-only), so the image's default server on :80 never loads.
+#
+# The web entry point (docs/design/WEB-ENTRY.md): cloudflared -> nginx ->
+# app, routed by hostname. Host network, listening on 127.0.0.1:8080 only:
+# cloudflared on the host is its only client. The LAN uses the apps' own
+# ports. Only the hostnames in config/ are served; Plex, the -arrs and
+# Transmission deliberately have no server block.
+name: nginx
+services:
+  nginx:
+    image: nginx:1.30.6-alpine
+    container_name: nginx
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+    volumes:
+      - ./config:/etc/nginx/conf.d:ro

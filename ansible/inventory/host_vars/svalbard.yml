@@ -36,6 +36,7 @@ stacks:
   - plex
   - crafty
   - homepage
+  - nginx
 
 # Where the pull agent and drift check send alerts: discord or slack. The
 # webhook URL itself is a secret (SOPS: alert_webhook_url); without it, alerts

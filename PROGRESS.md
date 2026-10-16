@@ -21,7 +21,32 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
-### 2026-10-15 - Homepage stack written (not deployed yet)
+### 2026-10-15 - nginx stack written (not deployed yet)
+- `stacks/nginx/`: `nginx:1.30.6-alpine` (stable), host network, listening on
+  `127.0.0.1:8080` only; `config/` replaces the image's `conf.d` (read-only),
+  so its default `:80` server never loads. Server blocks: `dash.ethbra.com` ->
+  Homepage `127.0.0.1:3000`, `crafty.ethbra.com` -> `https://127.0.0.1:8111`
+  (self-signed, websockets, 4g uploads, 1h read timeout). The `default_server`
+  returns 444. Real IP from `CF-Connecting-IP` (trusted from 127.0.0.1 only).
+- `stacks` role: a stack whose `config/` changed is restarted (nginx doesn't
+  reread its config). `nginx` added to `stacks`.
+- CI: new `nginx` job, `nginx -t` with the stack's pinned image.
+- Tested as a throwaway copy on `127.0.0.1:8099` (removed): `nginx -t` ok;
+  listens on loopback only; dash 200 (API too); crafty 302 -> login 200,
+  websocket `/ws` 101; `sonarr`/`plex`/unknown/no Host: 444; unreachable
+  from the LAN IP; `CF-Connecting-IP` logged as the client. Non-root
+  `--check --tags stacks`: only nginx changes. yamllint, ansible-lint and
+  `compose config` clean.
+- Nothing is public yet: no tunnel ingress or DNS points at nginx.
+
+### 2026-10-15 - Homepage live on the LAN
+- Deployed as ee2dc50; owner sees it at `http://192.168.1.22:3000`. Checked on
+  the box: both containers up (homepage healthy), networks
+  172.30.0.0/24 and 172.30.1.0/24 (internal), proxy not published, all 7
+  containers report `running`, no errors in the log. ATM10 still
+  `127.0.0.1:25565` only. SERVICES and NETWORK-AND-SECURITY updated.
+
+### 2026-10-15 - Homepage stack written
 - `stacks/homepage/`: Homepage v2.5.0 on `:3000` (LAN), plus
   `tecnativa/docker-socket-proxy` v0.5.0 (`CONTAINERS=1`, `POST=0`, socket
   `:ro`) on an internal network, never published. Subnets pinned

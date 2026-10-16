@@ -35,6 +35,7 @@ internet if the router forwards it); `127.0.0.1` = this machine only.
 | 32410-32414, 1901 | udp | all | Plex discovery/GDM | LAN |
 | 32401, 32600, 34975 | tcp | loopback | Plex internals | local |
 | 8989 / 7878 / 9696 | tcp | all | Sonarr / Radarr / Prowlarr | LAN |
+| 3000 | tcp | all | Homepage (dashboard; read-only Docker view) | LAN |
 | 5055 | tcp | all | Overseerr | LAN (or via Cloudflare Tunnel; check the dashboard) |
 | 9091, 51413 | tcp (+51413 udp) | all | Transmission UI / peer port | UI: LAN. 51413 is requested from the router by UPnP |
 | 22 | tcp | all | SSH (key-only) | LAN (not statically forwarded) |

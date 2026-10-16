@@ -73,13 +73,13 @@ Left over:
         tunnel, Access with Google login; public `dash`, `crafty` and the
         BlueMap map on `play.ethbra.com`. Plex, the -arrs and Transmission
         never go through the tunnel. In order:
-    - [ ] `stacks/homepage/` on the LAN (`192.168.1.22:3000`), read-only
-          docker socket proxy: written and tested 2026-10-15; deploys on
-          push (pull agent). Then: open it, check tiles and status
+    - [x] `stacks/homepage/` on the LAN (`192.168.1.22:3000`), read-only
+          docker socket proxy: live 2026-10-15 (ee2dc50)
     - [ ] Later: API-key widgets (Sonarr/Radarr/Prowlarr/Plex/Overseerr
           keys in SOPS as `HOMEPAGE_VAR_*` via `stacks_env`)
     - [ ] `stacks/nginx/` on `127.0.0.1:8080`: `dash`, `crafty`,
-          `default_server` 444
+          `default_server` 444: written and tested 2026-10-15; deploys on
+          push
     - [x] Owner (2026-10-15): token permissions added (Access: Apps and
           Policies Edit; Organizations, Identity Providers, and Groups Edit;
           verified by API); team domain `ethbra.cloudflareaccess.com`;

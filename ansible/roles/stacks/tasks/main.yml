@@ -38,6 +38,7 @@
     directory_mode: "0755"
   loop: "{{ stacks }}"
   when: (playbook_dir ~ '/../stacks/' ~ item ~ '/config') is directory
+  register: stacks_config
 
 - name: Stack .env files (root-only)
   ansible.builtin.copy:
@@ -61,6 +62,18 @@
     wait: true
     wait_timeout: 300
   loop: "{{ stacks }}"
+
+# Not every app rereads its config (nginx doesn't), so a changed config/
+# restarts that stack. A new stack was just started with it anyway.
+- name: Stacks whose config changed restarted
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_dir }}/{{ item.item }}"
+    state: restarted
+    wait: true
+    wait_timeout: 300
+  loop: "{{ stacks_config.results | selectattr('changed', 'defined') | selectattr('changed') }}"
+  loop_control:
+    label: "{{ item.item }}"
 
 - name: Read ATM10's published addresses
   ansible.builtin.command: docker port crafty-container 25565/tcp

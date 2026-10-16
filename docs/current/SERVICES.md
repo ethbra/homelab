@@ -5,7 +5,7 @@
 > [../design/IAC-DESIGN.md](../design/IAC-DESIGN.md). This doc changes only when a migration
 > phase actually lands.
 
-Status as of 2026-10-03. "Managed by" tells you how to restart it (see RUNBOOK).
+Status as of 2026-10-15. "Managed by" tells you how to restart it (see RUNBOOK).
 
 ## systemd services (host)
 
@@ -37,6 +37,8 @@ All use `TZ=America/Los_Angeles`, `PUID`/`PGID` 1000, `restart: unless-stopped`.
 | `prowlarr` | linuxserver/prowlarr 2.5.2 | 9696 | |
 | `overseerr` | linuxserver/overseerr 1.35.0 | 5055 | |
 | `transmission` | linuxserver/transmission 4.1.3 | 9091 (UI), 51413 tcp+udp | login = the shared media login (SOPS, root-only `.env`) |
+| `homepage` | gethomepage/homepage v2.5.0 | 3000 (LAN dashboard) | config from `stacks/homepage/config/`, mounted read-only; no app data. Networks pinned `172.30.0.0/24`, `172.30.1.0/24` |
+| `homepage-dockerproxy` | tecnativa/docker-socket-proxy v0.5.0 | none (internal network only) | Homepage's only Docker access: `CONTAINERS=1`, `POST=0` (read-only, writes get 403) |
 
 The media apps reach each other at `192.168.1.22:<port>` (stored in their own
 settings), not by container name or IP.

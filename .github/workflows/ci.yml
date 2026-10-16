@@ -71,6 +71,19 @@ jobs:
       - name: validate
         run: tofu validate
 
+  # Same pinned image as the stack, so a config that breaks nginx never
+  # reaches the box (the stacks role restarts nginx when config/ changes).
+  nginx:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: nginx -t
+        run: |
+          image=$(awk '/^ +image:/ {print $2}' stacks/nginx/compose.yaml)
+          docker run --rm -v "$PWD/stacks/nginx/config:/etc/nginx/conf.d:ro" "$image" nginx -t
+
   gitleaks:
     runs-on: ubuntu-24.04
     env:
