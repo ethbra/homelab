@@ -88,7 +88,9 @@ Left over:
           net), ingress + proxied DNS for `dash`, `crafty`: applied
           2026-10-15; Google sign-in works
     - [ ] BlueMap mod on ATM10; Crafty compose `127.0.0.1:8100` (ATM10 port
-          check before/after); nginx `play` block
+          check before/after); nginx `play` block: prepared 2026-10-15
+          (5.7-neoforge staged). Needs an ATM10 restart window: push, jar
+          into `mods/`, start ATM10, set `core.conf`, `bluemap reload`
     - [x] Owner: `mc.ethbra.com` added in TCPShield (2026-10-15)
     - [ ] Tofu: `mc` CNAME + SRV
           `_minecraft._tcp.play`; test a join; then `play` to the tunnel

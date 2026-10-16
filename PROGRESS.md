@@ -21,6 +21,19 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-10-15 - BlueMap prepared (not deployed)
+- Crafty compose: BlueMap's web port published on `127.0.0.1:8100` (nginx
+  only). Pre-check: ATM10 is `127.0.0.1:25565` only. Pushing this recreates
+  `crafty-container`, which stops every Minecraft server (ATM10 doesn't
+  auto-start), so it waits for the owner's restart window.
+- nginx: `play.conf` (`play.ethbra.com` -> `127.0.0.1:8100`). Inert until the
+  SRV switch routes `play` through the tunnel. `nginx -t` ok.
+- BlueMap **5.7-neoforge** (newest build for 1.21.1; no dependencies),
+  sha512-verified from Modrinth; staged, not yet in `mods/`. Its configs are
+  templates written on first start. Then set `accept-download: true`,
+  `render-thread-count: 2` and `metrics: false` in `config/bluemap/core.conf`,
+  and run `bluemap reload` (no second restart).
+
 ### 2026-10-15 - dash and crafty public behind Access
 - Owner applied the Access change; `https://dash.ethbra.com` and
   `crafty.ethbra.com` redirect to the Access login, and Google sign-in works.

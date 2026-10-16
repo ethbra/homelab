@@ -7,7 +7,8 @@
 # The project name and subnet are pinned: PCF on ATM10 trusts the network's
 # gateway (approvedProxyHosts = ["172.18.0.1"]), so it must not change.
 # Unprivileged (privileged: true was a workaround for an old Java problem).
-# Panel on 8111 only; Crafty's other ports (8100, 8123, 19132/udp) and
+# Panel on 8111; BlueMap's web server (a mod on ATM10) on 127.0.0.1:8100 for
+# nginx only (play.ethbra.com). Crafty's other ports (8123, 19132/udp) and
 # 25566+ stay unpublished.
 name: crafty
 services:
@@ -20,6 +21,7 @@ services:
     ports:
       - "8111:8443"
       - "127.0.0.1:25565:25565"
+      - "127.0.0.1:8100:8100"
     volumes:
       - /srv/appdata/crafty/config:/crafty/app/config
       - /srv/appdata/crafty/import:/crafty/import
