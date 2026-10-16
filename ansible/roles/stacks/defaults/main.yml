@@ -1,5 +1,9 @@
 stacks_dir: /opt/homelab/stacks
 
+# Stacks to take down and delete from stacks_dir (set in host_vars next to
+# `stacks`). Their app data is kept. Prune an entry once its removal has held.
+stacks_absent: []
+
 # Values rendered into a stack's root-only .env (compose reads it for ${...}).
 # Only stacks listed here get one.
 stacks_env:

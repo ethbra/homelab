@@ -8,6 +8,35 @@
     fail_msg: "Add media_apps_username / media_apps_password with sops secrets/svalbard.yaml (no ' in either)"
     quiet: true
 
+# Retiring a stack: move it from `stacks` (host_vars) to `stacks_absent`.
+# Taken down before the others start, so a replacement can reuse its ports.
+- name: Retired stacks are not also active
+  ansible.builtin.assert:
+    that: stacks | intersect(stacks_absent) | length == 0
+    fail_msg: "{{ stacks | intersect(stacks_absent) }} are in both stacks and stacks_absent"
+    quiet: true
+
+- name: Read the retired stacks' compose files
+  ansible.builtin.stat:
+    path: "{{ stacks_dir }}/{{ item }}/compose.yaml"
+  loop: "{{ stacks_absent }}"
+  register: stacks_absent_compose
+
+# Bind-mounted app data (/srv/appdata, /DATA) is not touched.
+- name: Retired stacks are down
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_dir }}/{{ item.item }}"
+    state: absent
+  loop: "{{ stacks_absent_compose.results | selectattr('stat.exists') }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Retired stacks' directories are removed
+  ansible.builtin.file:
+    path: "{{ stacks_dir }}/{{ item }}"
+    state: absent
+  loop: "{{ stacks_absent }}"
+
 - name: Stack directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -26,8 +55,7 @@
     mode: "0644"
   loop: "{{ stacks }}"
 
-# Optional stacks/<name>/config/, mounted read-only by the stack. Files
-# removed from the repo are not removed from the box.
+# Optional stacks/<name>/config/, mounted read-only by the stack.
 - name: Stack config directories
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../stacks/{{ item }}/config/"
@@ -39,6 +67,46 @@
   loop: "{{ stacks }}"
   when: (playbook_dir ~ '/../stacks/' ~ item ~ '/config') is directory
   register: stacks_config
+
+# The copy above only adds and overwrites, so a file deleted from the repo
+# (e.g. an nginx server block) would stay live. Anything deployed under
+# config/ that the repo no longer has is removed. Check mode (the drift
+# check) reports such files as changed. The repo is on this host
+# (ansible_connection: local), like the clone in the gitops role.
+- name: Read the repo's and the deployed config files
+  ansible.builtin.find:
+    paths: "{{ item }}"
+    recurse: true
+    hidden: true
+    file_type: any
+  loop:
+    - "{{ playbook_dir | dirname }}/stacks"
+    - "{{ stacks_dir }}"
+  register: stacks_config_files
+
+- name: Config files no longer in the repo are removed
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: >-
+    {{ stacks_config_files.results[1].files
+       | rejectattr('isdir')
+       | map(attribute='path')
+       | select('match', stacks_config_regex)
+       | reject('in', stacks_repo_config_files)
+       | list }}
+  register: stacks_config_pruned
+  vars:
+    # Only under config/ of the active stacks: never compose.yaml or .env.
+    stacks_config_regex: >-
+      ^{{ stacks_dir | regex_escape }}/({{ stacks | map('regex_escape') | join('|') }})/config/
+    # The repo's paths, rewritten to where the copy above puts them.
+    stacks_repo_config_files: >-
+      {{ stacks_config_files.results[0].files
+         | rejectattr('isdir')
+         | map(attribute='path')
+         | map('regex_replace', '^' ~ (playbook_dir | dirname | regex_escape) ~ '/stacks/', stacks_dir ~ '/')
+         | list }}
 
 - name: Stack .env files (root-only)
   ansible.builtin.copy:
@@ -64,16 +132,21 @@
   loop: "{{ stacks }}"
 
 # Not every app rereads its config (nginx doesn't), so a changed config/
-# restarts that stack. A new stack was just started with it anyway.
+# (files added, changed or removed) restarts that stack. A new stack was just
+# started with it anyway.
 - name: Stacks whose config changed restarted
   community.docker.docker_compose_v2:
-    project_src: "{{ stacks_dir }}/{{ item.item }}"
+    project_src: "{{ stacks_dir }}/{{ item }}"
     state: restarted
     wait: true
     wait_timeout: 300
-  loop: "{{ stacks_config.results | selectattr('changed', 'defined') | selectattr('changed') }}"
-  loop_control:
-    label: "{{ item.item }}"
+  loop: >-
+    {{ ((stacks_config.results | selectattr('changed', 'defined') | selectattr('changed')
+         | map(attribute='item') | list)
+        + (stacks_config_pruned.results | selectattr('changed')
+           | map(attribute='item')
+           | map('regex_replace', '^' ~ (stacks_dir | regex_escape) ~ '/([^/]+)/.*$', '\1') | list))
+       | unique }}
 
 # Whichever Minecraft server Crafty runs listens on 25565 inside the container,
 # behind Velocity with online-mode=false: anything that reaches it directly
