@@ -12,10 +12,11 @@
   ansible.builtin.assert:
     that:
       - grokbot_discord_token is defined
+      - grokbot_openai_api_key is defined
       - grokbot_xai_api_key is defined
       - grokbot_tavily_api_key is defined
-      - "\"'\" not in grokbot_discord_token ~ grokbot_xai_api_key ~ grokbot_tavily_api_key"
-    fail_msg: "Add grokbot_discord_token, _xai_api_key, _tavily_api_key with sops secrets/svalbard.yaml (no ')"
+      - "\"'\" not in grokbot_discord_token ~ grokbot_openai_api_key ~ grokbot_xai_api_key ~ grokbot_tavily_api_key"
+    fail_msg: "Add grokbot_discord_token, _openai_api_key, _xai_api_key, _tavily_api_key with sops (no ')"
     quiet: true
   when: "'grokbot' in stacks"
 

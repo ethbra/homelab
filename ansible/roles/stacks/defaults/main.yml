@@ -8,5 +8,6 @@ stacks_env:
     MEDIA_APPS_PASSWORD: "{{ media_apps_password }}"
   grokbot:
     GROKBOT_DISCORD_TOKEN: "{{ grokbot_discord_token }}"
+    GROKBOT_OPENAI_API_KEY: "{{ grokbot_openai_api_key }}"
     GROKBOT_XAI_API_KEY: "{{ grokbot_xai_api_key }}"
     GROKBOT_TAVILY_API_KEY: "{{ grokbot_tavily_api_key }}"
