@@ -8,6 +8,17 @@
     fail_msg: "Add media_apps_username / media_apps_password with sops secrets/svalbard.yaml (no ' in either)"
     quiet: true
 
+- name: Grokbot secrets are in SOPS
+  ansible.builtin.assert:
+    that:
+      - grokbot_discord_token is defined
+      - grokbot_xai_api_key is defined
+      - grokbot_tavily_api_key is defined
+      - "\"'\" not in grokbot_discord_token ~ grokbot_xai_api_key ~ grokbot_tavily_api_key"
+    fail_msg: "Add grokbot_discord_token, _xai_api_key, _tavily_api_key with sops secrets/svalbard.yaml (no ')"
+    quiet: true
+  when: "'grokbot' in stacks"
+
 - name: Stack directories
   ansible.builtin.file:
     path: "{{ item }}"

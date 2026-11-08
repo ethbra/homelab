@@ -1,0 +1,32 @@
+# Deployed by the stacks role to /opt/homelab/stacks/grokbot.
+# Grok Discord bot (https://github.com/ethbra/grokbot). Outbound only (Discord
+# gateway, xAI, Tavily): no ports, no tunnel hostname, no nginx route.
+# Secrets come from the root-only .env the stacks role renders from SOPS.
+# Default bridge like the media apps, so no auto-addressed network can take
+# 172.18.0.0/16, which Crafty's network must keep.
+# The image starts as root only to chown /data/state, then runs as 1000:1000.
+name: grokbot
+services:
+  grokbot:
+    image: ghcr.io/ethbra/grokbot:0.1.0
+    container_name: grokbot
+    network_mode: bridge
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      DISCORD_TOKEN: ${GROKBOT_DISCORD_TOKEN}
+      XAI_API_KEY: ${GROKBOT_XAI_API_KEY}
+      TAVILY_API_KEY: ${GROKBOT_TAVILY_API_KEY}
+      GROK_MODEL: grok-4.3
+      DEFAULT_SEARCH: web
+      DAILY_BUDGET_USD: "2.00"
+      PER_USER_DAILY_USD: "0.50"
+    volumes:
+      - /srv/appdata/grokbot:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]
+    security_opt:
+      - no-new-privileges:true

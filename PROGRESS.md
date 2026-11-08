@@ -21,6 +21,19 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-07 - Grokbot stack added (outbound-only Discord bot)
+- `stacks/grokbot/compose.yaml`: `ghcr.io/ethbra/grokbot:0.1.0`, built and
+  published by the ethbra/grokbot repo's CI on a version tag. Default bridge, no
+  ports: it only dials out (Discord gateway, xAI, Tavily), so no DNS, tunnel
+  ingress, nginx or firewall change.
+- Secrets `grokbot_discord_token`, `grokbot_xai_api_key`,
+  `grokbot_tavily_api_key` in `secrets/svalbard.yaml` -> root-only `.env`
+  (`stacks_env.grokbot`); the stacks role asserts they exist.
+- `/srv/appdata/grokbot` added to `storage_appdata_apps`; the bot writes only
+  `state/` inside it.
+- Upgrades: tag a release in ethbra/grokbot, then bump the image tag here with a
+  signed commit.
+
 ### 2026-10-15 - Public map hardened (read-only, rate limited)
 - `stacks/nginx/config/play.conf`: `limit_except GET` (others 403),
   `client_max_body_size 1k`, per-visitor `limit_req` 30 r/s with

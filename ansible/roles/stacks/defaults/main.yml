@@ -6,3 +6,7 @@ stacks_env:
   transmission:
     MEDIA_APPS_USERNAME: "{{ media_apps_username }}"
     MEDIA_APPS_PASSWORD: "{{ media_apps_password }}"
+  grokbot:
+    GROKBOT_DISCORD_TOKEN: "{{ grokbot_discord_token }}"
+    GROKBOT_XAI_API_KEY: "{{ grokbot_xai_api_key }}"
+    GROKBOT_TAVILY_API_KEY: "{{ grokbot_tavily_api_key }}"
