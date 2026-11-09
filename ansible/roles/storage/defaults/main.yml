@@ -1,7 +1,7 @@
 storage_pool_mount: /DATA
 storage_appdata_dir: /srv/appdata
 # Folder names under it (Plex keeps CasaOS's plex-nvidia).
-storage_appdata_apps: [crafty, grokbot, overseerr, plex-nvidia, prowlarr, radarr, sonarr, transmission]
+storage_appdata_apps: [crafty, grokbot, ollama, overseerr, plex-nvidia, prowlarr, radarr, sonarr, transmission]
 
 # minfreespace keeps 50 GB free on each drive before new files go elsewhere;
 # cache.files=partial is what dropcacheonclose needs to have an effect.

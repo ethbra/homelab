@@ -21,6 +21,20 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-09 - Local model for grokbot follow-ups (ollama)
+- `stacks/grokbot/compose.yaml`: grokbot 0.5.0 answers follow-ups from the person
+  it just answered without a new @. Whether a message is meant for it is decided
+  locally: rules first, then `qwen2.5:1.5b-instruct-q4_K_M` on Ollama. Messages it
+  passes on never reach OpenAI/xAI/Tavily.
+- New `ollama` service in the grokbot stack, `ollama/ollama:0.40.15`, NVIDIA
+  runtime, `network_mode: "service:grokbot"`: the bot calls 127.0.0.1:11434 and
+  no other container or host port can. No secrets. Models in
+  `/srv/appdata/ollama` (added to `storage_appdata_apps`); the bot pulls the
+  model on first start.
+- Open: confirm Ollama uses the GPU with driver 535 (`docker logs ollama`, look
+  for the CUDA device line); on CPU the bot still works (5 s timeout, then a
+  stricter rule-only check).
+
 ### 2026-11-07 - Grokbot stack added (outbound-only Discord bot)
 - `stacks/grokbot/compose.yaml`: `ghcr.io/ethbra/grokbot:0.2.0` (gpt-6-luna
   answers; Grok is called for X search and the Deep mode), built and
