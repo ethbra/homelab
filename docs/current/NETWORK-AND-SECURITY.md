@@ -122,6 +122,7 @@ sets `FORWARD DROP`); `velocity-firewall` writes the rest at every boot.
 | Cloudflare tunnel token | `secrets/svalbard.yaml` (SOPS) -> `/etc/cloudflared/token` (0600, from the `cloudflared` role). The installer's plaintext copy in `~/.cloudflared/` was deleted 2026-10-02 | rotated 2026-10-02 (the old one had leaked into a session transcript); to rotate again see docs/NEXT-STEPS.md |
 | Crafty admin login | in Crafty's own database (custom password + 2FA since 2026-10-02) | `default-creds.txt` deleted |
 | Media apps login | `secrets/svalbard.yaml` (SOPS: `media_apps_username`/`_password`) -> root-only `/opt/homelab/stacks/transmission/.env`; Sonarr/Radarr store it for their Transmission client | Transmission applies it at every start |
+| Grokbot API keys | `secrets/svalbard.yaml` (SOPS: `grokbot_discord_token`, `grokbot_openai_api_key`, `grokbot_xai_api_key`, `grokbot_tavily_api_key`) -> root-only `/opt/homelab/stacks/grokbot/.env` | Read at container start; rotate by editing SOPS and pushing (the role rewrites `.env` and compose recreates the container) |
 | ~~No-IP DDNS login~~ | removed 2026-10-01 (script, source, trash and shell-history lines deleted) | the password appeared in a session transcript; DDNS key and hostnames deleted in the noip.com account (2026-10-13). DUC not installed (no package, binary or unit) |
 | Plex claim / token | inside the Plex config (`Preferences.xml`) | |
 
