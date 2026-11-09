@@ -1,8 +1,135 @@
-# The driver itself (nvidia-driver) comes from Debian non-free.
-- name: NVIDIA driver
+# NVIDIA driver (NVIDIA's CUDA apt repo, pinned to one branch) and the
+# container toolkit (nvidia.github.io). Docker's default runtime is nvidia
+# (docker role), so GPU containers depend on both.
+
+# DKMS can only build the module for a kernel whose headers are installed.
+# Without this metapackage, unattended-upgrades installs new kernels with no
+# headers, and the next reboot comes up with no NVIDIA module.
+- name: Kernel headers that follow linux-image-amd64
   ansible.builtin.apt:
-    name: nvidia-driver
+    name: linux-headers-amd64
     state: present
+
+# Leftover from the 2025 CUDA-repo install: its sources file is gone; the
+# role installs the key itself, below.
+- name: Old cuda-keyring package
+  ansible.builtin.apt:
+    name: cuda-keyring
+    state: absent
+    purge: true
+
+- name: Installed packages
+  ansible.builtin.package_facts:
+    manager: apt
+
+# "Other branch installed" covers Debian's 535 (the first switch) and any
+# later change of nvidia_toolkit_driver_branch. A box with no driver installs directly.
+- name: Is a driver from another branch installed?
+  ansible.builtin.set_fact:
+    nvidia_toolkit_driver_installed: "{{ ansible_facts.packages['nvidia-kernel-dkms'][0].version
+      if 'nvidia-kernel-dkms' in ansible_facts.packages else '' }}"
+
+- name: Classify the installed driver
+  ansible.builtin.set_fact:
+    nvidia_toolkit_driver_switch: "{{ nvidia_toolkit_driver_installed != ''
+      and not nvidia_toolkit_driver_installed.startswith(nvidia_toolkit_driver_branch ~ '.') }}"
+    nvidia_toolkit_driver_current: "{{ nvidia_toolkit_driver_installed.startswith(
+      nvidia_toolkit_driver_branch ~ '.') }}"
+
+# Reported as changed so the daily drift check flags the box until it is done.
+- name: Driver switch pending (skipped)
+  ansible.builtin.debug:
+    msg: >-
+      Installed driver {{ nvidia_toolkit_driver_installed }} is not branch {{ nvidia_toolkit_driver_branch }}.
+      Switching swaps the driver and needs a reboot; follow docs/current/RUNBOOK.md
+      ("NVIDIA driver") and run with -e allow_disruptive_restarts=true.
+  changed_when: true
+  when: nvidia_toolkit_driver_switch and not (allow_disruptive_restarts | bool)
+
+- name: NVIDIA driver
+  when: not nvidia_toolkit_driver_switch or (allow_disruptive_restarts | bool)
+  block:
+    - name: CUDA repo apt key
+      ansible.builtin.copy:
+        src: cuda-archive-keyring.gpg
+        dest: /etc/apt/keyrings/cuda-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: "0644"
+      register: nvidia_toolkit_cuda_key
+
+    - name: CUDA repo apt source
+      ansible.builtin.copy:
+        src: nvidia-cuda.list
+        dest: /etc/apt/sources.list.d/nvidia-cuda.list
+        owner: root
+        group: root
+        mode: "0644"
+      register: nvidia_toolkit_cuda_list
+
+    - name: Refresh apt for the CUDA repo
+      ansible.builtin.apt:
+        update_cache: true
+      when: nvidia_toolkit_cuda_key is changed or nvidia_toolkit_cuda_list is changed
+
+    # NVIDIA's own pin file (/etc/apt/preferences.d/nvidia-driver-pin): every
+    # driver source package at version <branch>* with priority 1000, so
+    # `apt upgrade` stays on the branch. Its packages conflict with each other,
+    # so a branch change replaces it.
+    - name: Pin the driver branch
+      ansible.builtin.apt:
+        name: "nvidia-driver-pinning-{{ nvidia_toolkit_driver_branch }}"
+        state: present
+      # In --check the repo was never added, so apt can't see the package.
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    # Mixing Debian's and NVIDIA's driver packages is what broke the box on
+    # 2026-09-18, so the old stack goes completely before the new one goes in.
+    - name: Purge the driver from the other branch
+      ansible.builtin.apt:
+        name: "{{ nvidia_toolkit_driver_old_packages | select('in', ansible_facts.packages) | list }}"
+        state: absent
+        purge: true
+        autoremove: false
+      when: nvidia_toolkit_driver_switch
+
+    # state: present, not latest: updates within the branch are a manual
+    # `apt upgrade` plus reboot (unattended-upgrades doesn't take this origin).
+    - name: Driver packages
+      ansible.builtin.apt:
+        name: "{{ nvidia_toolkit_driver_packages }}"
+        state: present
+      ignore_errors: "{{ ansible_check_mode }}"
+      notify: NVIDIA driver reboot needed
+
+# Fails before a reboot would: the kernel that boots next (the newest
+# installed) must have the module for the installed driver. Catches a
+# kernel update whose DKMS build failed or had no headers.
+- name: Check the NVIDIA module exists for the newest kernel
+  when: nvidia_toolkit_driver_current
+  block:
+    - name: NVIDIA module version for the newest kernel
+      ansible.builtin.shell: |
+        set -o pipefail
+        k=$(ls /boot/vmlinuz-* | sed 's|^/boot/vmlinuz-||' | sort -V | tail -n1)
+        printf '%s ' "$k"
+        /usr/sbin/modinfo -k "$k" -F version nvidia 2>/dev/null || true
+      args:
+        executable: /bin/bash
+      register: nvidia_toolkit_module
+      changed_when: false
+      check_mode: false
+
+    - name: Module matches the installed driver
+      ansible.builtin.assert:
+        that: nvidia_toolkit_module.stdout.split() | length == 2
+          and nvidia_toolkit_module.stdout.split()[1] == nvidia_toolkit_driver_installed.split('-')[0]
+        fail_msg: >-
+          No NVIDIA {{ nvidia_toolkit_driver_installed.split('-')[0] }} module for kernel
+          {{ nvidia_toolkit_module.stdout.split()[0] }} (got: '{{ nvidia_toolkit_module.stdout }}').
+          Rebooting now would leave the GPU without a driver. Check
+          `sudo dkms status` and `sudo dkms autoinstall -k <kernel>`.
+        quiet: true
 
 - name: NVIDIA container toolkit apt key
   ansible.builtin.copy:

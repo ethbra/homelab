@@ -11,7 +11,7 @@
 |---|---|
 | Hostname / LAN IP | `Svalbard` / `192.168.1.22` (hardcoded in two places, see below) |
 | OS | Debian 12 (bookworm), kernel 6.1 |
-| CPU / GPU | i7-9700K (8 cores) / GeForce RTX 2070 (8 GB), driver 535.309.01 (Debian non-free) |
+| CPU / GPU | i7-9700K (8 cores) / GeForce RTX 2070 SUPER (8 GB, Turing, compute 7.5), driver branch **580** from NVIDIA's CUDA apt repo, pinned (see "GPU driver" below). Until the cutover in RUNBOOK "NVIDIA driver" is done, the box still runs 535.309.01 (Debian non-free) |
 | Docker | 29.x, with `nvidia` set as the **default runtime** |
 | Orchestration | Docker Compose: `stacks/<app>/compose.yaml`, deployed to `/opt/homelab/stacks` by the `stacks` role |
 | Host Java | Temurin 25 (runs Velocity only; Minecraft servers use the JVMs inside the Crafty container, chosen per server) |
@@ -88,6 +88,31 @@ Crafty's own status polling talks to the server directly inside the container
 All are compose stacks in `stacks/`. Plex uses `network_mode: host`, so it
 shares the host's ports directly; the others are on the default bridge and
 reach each other via `192.168.1.22:<port>`.
+
+## GPU driver
+
+The `nvidia_toolkit` role owns the whole GPU stack:
+
+| Piece | Source | Notes |
+|---|---|---|
+| Driver (`nvidia-driver`, `nvidia-driver-cuda`, `nvidia-kernel-dkms`) | NVIDIA's CUDA repo for Debian 12 (`/etc/apt/sources.list.d/nvidia-cuda.list`, key in `/etc/apt/keyrings/`) | proprietary kernel module, built by DKMS for every installed kernel |
+| Branch pin | `nvidia-driver-pinning-580` (NVIDIA's package; `/etc/apt/preferences.d/nvidia-driver-pin`) | priority 1000 on `580*`, so `apt upgrade` never changes branch. Branch is `nvidia_toolkit_driver_branch` |
+| Kernel headers | `linux-headers-amd64` | without it, kernels from unattended-upgrades come with no headers and DKMS can't build the module |
+| Container toolkit | nvidia.github.io (`nvidia-container-toolkit.list`) | independent of the driver branch. The CUDA repo also has an older copy, which apt ignores (lower version) |
+
+Why 580: Ollama 0.40 needs driver >= 550 and bundles CUDA 12.8 and 13.0
+runners; 13.0 needs >= 580. 580 is NVIDIA's long-term support branch
+(end of life mid-2028). See DECISIONS.
+
+Updates: unattended-upgrades only takes Debian origins, so driver updates
+within 580 are a manual `sudo apt upgrade` followed by a reboot. Kernel updates are
+still automatic. The role's "module matches the installed driver" check (run
+by every apply and the daily drift check) fails if the newest installed
+kernel has no matching module, which is what a reboot would boot into.
+
+Secure Boot is off (firmware in Setup Mode), so the unsigned DKMS module
+loads. If Secure Boot is ever turned on, enroll DKMS's key first:
+`sudo mokutil --import /var/lib/dkms/mok.pub`, then reboot and confirm in MOK manager.
 
 ## Other pieces
 

@@ -106,6 +106,103 @@ the script, restart Velocity. Better: reserve the IP in your router.
   `sudo apt purge plexmediaserver`. Its data in `/var/lib/plexmediaserver` stays
   until you delete it, and is your rollback.
 
+## NVIDIA driver
+
+The `nvidia_toolkit` role installs driver branch `nvidia_toolkit_driver_branch`
+(580) from NVIDIA's CUDA repo, pinned. A branch change (including the first
+switch off Debian's 535) only happens with `-e allow_disruptive_restarts=true`.
+Without it, applies and the drift check report "Driver switch pending".
+Details: ARCHITECTURE "GPU driver", DECISIONS.
+
+**Updates within the branch:** `sudo apt update && sudo apt upgrade`, then
+`cd ansible && ansible-playbook site.yml -K --tags nvidia` (the module check must
+pass), then reboot.
+
+### Cutover from Debian 535 (once)
+
+The reboot takes **Minecraft (Crafty) and every container down** for a few
+minutes. Plex runs on the CPU between the install and the reboot (the loaded
+535 module no longer matches the 580 libraries).
+
+0. **After the PR lands** (signed commit on `main`), the pull agent applies the
+   safe part on its own: `linux-headers-amd64` (DKMS then builds 535 for the
+   pending 6.1.0-54 kernel, so reboots are safe again even if you postpone
+   the switch) and removal of the dead `cuda-keyring`. Check:
+   ```bash
+   sudo cat /var/lib/homelab/applied     # the landed commit
+   sudo dkms status                      # nvidia-current/535.309.01 ... 6.1.0-54-amd64: installed
+   ```
+1. **Baseline**:
+   ```bash
+   nvidia-smi --query-gpu=driver_version --format=csv,noheader          # 535.309.01
+   docker run --rm --gpus all nvidia/cuda:13.0.2-base-ubuntu24.04 nvidia-smi
+   #   expected to FAIL now: "unsatisfied condition: cuda>=13.0"
+   docker inspect crafty-container --format '{{json .HostConfig.PortBindings}}'   # 127.0.0.1:25565 only
+   ```
+2. **Quiet moment**: tell players, run `scripts/crafty-servers.py` to see the live
+   server, and stop it in the Crafty web UI.
+3. **Install** (from an up-to-date `main`):
+   ```bash
+   cd ~/projects/active/homelab && git switch main && git pull --ff-only && cd ansible
+   ansible-playbook site.yml --check --diff -K --tags nvidia -e allow_disruptive_restarts=true
+   #   preview; two "...ignoring" errors are expected (check mode can't see the new repo yet)
+   ansible-playbook site.yml -K --tags nvidia -e allow_disruptive_restarts=true
+   #   purges 535, installs 580; ends with "NVIDIA driver reboot needed"
+   ansible-playbook site.yml -K --tags nvidia
+   #   second run: changed=0 and "Module matches the installed driver" passes.
+   #   This is the go/no-go for the reboot. If it fails, see Rollback A before rebooting.
+   sudo dkms status            # nvidia/580.x for 6.1.0-53 and 6.1.0-54
+   ```
+4. **Reboot**: `sudo systemctl reboot`
+5. **Verify**:
+   ```bash
+   uname -r                                    # 6.1.0-54-amd64
+   nvidia-smi                                  # Driver Version: 580.x, CUDA Version: 13.0, RTX 2070 SUPER
+   systemctl is-active nvidia-persistenced docker velocity
+   docker run --rm --gpus all nvidia/cuda:13.0.2-base-ubuntu24.04 nvidia-smi   # works now
+   docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
+   docker ps --format '{{.Names}}\t{{.Status}}'                     # all stacks up
+   docker exec plex nvidia-smi -L                                   # the GPU, inside Plex
+   docker inspect crafty-container --format '{{json .HostConfig.PortBindings}}'   # still 127.0.0.1:25565 only
+   scripts/crafty-servers.py           # start the live server in Crafty if it isn't running
+   python3 scripts/mc-status-ping.py 127.0.0.1 25565
+   sudo homelab-drift                  # "no drift at <hash>"
+   ```
+   Once grokbot's Ollama is deployed: `docker logs ollama 2>&1 | grep -i 'inference compute'`
+   should name CUDA and the RTX 2070 SUPER, not CPU.
+
+### Rollback
+
+**A. No GPU after the reboot, box is up.** Usually the module wasn't built for the booted kernel.
+```bash
+sudo dkms status
+sudo dkms autoinstall -k "$(uname -r)" && sudo modprobe nvidia && nvidia-smi
+```
+Or boot the previous kernel: GRUB > "Advanced options for Debian" > 6.1.0-53
+(the install built 580 for it too).
+
+**B. Docker or containers broken.** Docker itself doesn't need the driver.
+The nvidia runtime only adds the GPU to containers that ask for it (Plex,
+Ollama), so Crafty and the others start regardless. If dockerd is down,
+check `journalctl -u docker -b` (usually `/DATA` not mounted, not the GPU).
+A GPU container that won't start after a fix needs recreating, not
+restarting: `cd /opt/homelab/stacks/plex && sudo docker compose up -d --force-recreate`.
+
+**C. Back to Debian's 535.** This is the same purge-then-install that worked on 2026-09-18. It leaves the container toolkit alone.
+```bash
+sudo apt-get purge 'nvidia-driver-pinning-*'
+sudo rm /etc/apt/sources.list.d/nvidia-cuda.list && sudo apt-get update
+sudo apt-get purge $(dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' | awk '$1=="ii"{print $2}' \
+  | grep -E 'nvidia|libcuda|libnvcuvid|libnvoptix|libxnvctrl' | grep -v container)
+#   read the list apt shows: no nvidia-container-* / libnvidia-container* in it
+sudo apt-get install nvidia-driver firmware-misc-nonfree
+sudo dkms status            # nvidia-current/535.x for the newest kernel
+sudo systemctl reboot
+```
+Then revert the change with a signed commit (`git revert -S <commit>`, push)
+so the repo matches the box again. Until then, nothing re-installs 580 (that needs the
+flag), but the drift check reports the switch as pending.
+
 ## Troubleshooting (symptoms we actually hit)
 
 | Symptom | Cause | Fix |

@@ -7,6 +7,30 @@
 
 Short records of *why* things are the way they are. Newest first.
 
+## NVIDIA driver 580 from NVIDIA's CUDA repo, pinned (2026-11-09)
+- **Problem:** Ollama 0.40.15 (grokbot, PR #14) needs driver >= 550 for a
+  compute 7.5 card (its `docs/gpu.mdx` at that tag); the box had Debian's 535.
+  Its image bundles CUDA 12.8 (needs >= 570) and CUDA 13.0 (needs >= 580) runners.
+- **Options:** bookworm-backports has only 535.216, older than the 535.309 that
+  bookworm-security already provides, so it can't help. Trixie's packages
+  would mean mixing releases. That left NVIDIA's CUDA repo for Debian 12
+  (branches 545 to 620).
+- **Decision:** CUDA repo, branch **580** (NVIDIA's LTS branch, end of life
+  mid-2028; the oldest that runs both Ollama runners), pinned with NVIDIA's
+  `nvidia-driver-pinning-580`. Proprietary kernel module, as with 535.
+- **Why the pin matters:** the box ran this repo unpinned from 2025-10 to
+  2026-09 and broke three times. A plain `apt upgrade` jumped branches
+  (580 -> 590, later to 615 with `nvidia-open` mixed in), and each recovery
+  needed hand-installed `linux-headers-6.1.0-NN`. That is why it went back to
+  Debian 535 on 2026-09-18. The role now pins the branch, installs
+  `linux-headers-amd64`, never mixes Debian and NVIDIA packages (the switch
+  purges the old stack first), and checks that the next-boot kernel has the
+  module.
+- **Trade-offs:** driver updates are manual (unattended-upgrades only takes
+  Debian origins). The repo is third-party but NVIDIA-signed (key
+  `EB69 3B30 35CD 5710 E231 E123 A4B4 6996 3BF8 63CC`). DKMS and Secure Boot
+  behave the same as with Debian's packages.
+
 ## Minecraft setup is server-agnostic; no Java pin (2026-10-15)
 - **Problem:** the repo named one server (the old "Cam ATM10" UUID) in CLAUDE.md,
   the RUNBOOK and the `stacks` role, and asserted it ran Java 21. The live
