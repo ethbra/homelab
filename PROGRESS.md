@@ -34,6 +34,11 @@ Newest first. Update this whenever something is changed, decided or left open.
 - Open: confirm Ollama uses the GPU with driver 535 (`docker logs ollama`, look
   for the CUDA device line); on CPU the bot still works (5 s timeout, then a
   stricter rule-only check).
+- Memory limits on the grokbot stack: grokbot 512 MB, ollama 3 GB, no swap for
+  either; ollama limited to one loaded model, one request and a 2048-token
+  context, so it stays at ~1.5 GB of VRAM. Docker can't hard-cap VRAM; these
+  settings are the cap. (The 2026-10-05 OOM kill was Crafty's Java at 18 GB RSS,
+  not these.)
 
 ### 2026-11-07 - Grokbot stack added (outbound-only Discord bot)
 - `stacks/grokbot/compose.yaml`: `ghcr.io/ethbra/grokbot:0.2.0` (gpt-6-luna
