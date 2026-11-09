@@ -6,10 +6,14 @@
 # Default bridge like the media apps, so no auto-addressed network can take
 # 172.18.0.0/16, which Crafty's network must keep.
 # The image starts as root only to chown /data/state, then runs as 1000:1000.
+# ollama: a small local model that decides whether a message without an @ is a
+# follow-up meant for the bot. It shares grokbot's network namespace, so the bot
+# reaches it on 127.0.0.1:11434 and nothing else can (no ports, no other network).
+# Messages it judges never leave the box. The bot pulls the model on first start.
 name: grokbot
 services:
   grokbot:
-    image: ghcr.io/ethbra/grokbot:0.3.3
+    image: ghcr.io/ethbra/grokbot:0.5.0
     container_name: grokbot
     network_mode: bridge
     restart: unless-stopped
@@ -24,6 +28,8 @@ services:
       DEFAULT_SEARCH: auto
       DAILY_BUDGET_USD: "2.00"
       PER_USER_DAILY_USD: "0.50"
+      OLLAMA_URL: http://127.0.0.1:11434
+      INTERJECT_MODEL: qwen2.5:1.5b-instruct-q4_K_M
     volumes:
       - /srv/appdata/grokbot:/data
     read_only: true
@@ -31,5 +37,27 @@ services:
       - /tmp
     cap_drop: [ALL]
     cap_add: [CHOWN, SETUID, SETGID]
+    security_opt:
+      - no-new-privileges:true
+
+  ollama:
+    image: ollama/ollama:0.40.15
+    container_name: ollama
+    network_mode: "service:grokbot"
+    depends_on: [grokbot]
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      TZ: America/Los_Angeles
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_KEEP_ALIVE: "-1"
+    volumes:
+      - /srv/appdata/ollama:/root/.ollama
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
