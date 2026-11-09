@@ -1,12 +1,26 @@
 # Homelab (Svalbard)
 
-One Debian box running a media stack, a modded Minecraft server and a few
-supporting services. This directory is the single place to understand it:
-what runs, where its config lives, what is exposed, and what we changed and why.
+This repo serves as a source-of-truth for my Debian system configuration across multiple domains: Cloudflare, Nginx, ports, containers, etc.
 
-Last verified: 2026-10-01.
+Last verified: 2026-10-16.
 
-## Start here
+## Cloudflare
+
+Cloudflare manages the public DNS [ethbra.com](https://ethbra.com/), using sub-domains to direct to services I want exposed ([Crafty](https://gitlab.com/crafty-controller/crafty-4) server manager, [BlueMap](https://github.com/BlueMap-Minecraft/BlueMap), and a [Homepage](https://github.com/gethomepage/homepage) dashboard)
+
+Every page is gated by an [Access](https://www.cloudflare.com/sase/products/access/) policy: Google (OAuth) login by default, with explicit bypasses for public pages
+
+## TCPShield
+
+Serves as DDoS protection and a proxy for Minecraft servers. The typical configuration for Minecraft servers usually pairs a Cloudflare DNS + TCPShield proxy for obscuring IP address without needing a paid plan with Cloudflare Spectrum.
+
+## Routing
+
+## Ports
+
+## Containers
+
+<!-- ## Start here
 
 | I want to...                                  | Read                                                   |
 |-----------------------------------------------|--------------------------------------------------------|
@@ -63,4 +77,4 @@ the next run, which puts the repo's version back.
 - Anything that changes a port, firewall rule, bind address or secret gets a
   line in [PROGRESS.md](PROGRESS.md) and, if it changes exposure, an update to
   [docs/current/NETWORK-AND-SECURITY.md](docs/current/NETWORK-AND-SECURITY.md).
-- Other projects (`neet2neat`) and `archive/` are separate and not covered here.
+- Other projects (`neet2neat`) and `archive/` are separate and not covered here. -->
