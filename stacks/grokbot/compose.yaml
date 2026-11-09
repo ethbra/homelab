@@ -39,6 +39,9 @@ services:
     cap_add: [CHOWN, SETUID, SETGID]
     security_opt:
       - no-new-privileges:true
+    # Uses ~50 MB; the cap only stops a runaway from taking the box down.
+    mem_limit: 512m
+    memswap_limit: 512m
 
   ollama:
     image: ollama/ollama:0.40.15
@@ -53,6 +56,11 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       OLLAMA_HOST: 127.0.0.1:11434
       OLLAMA_KEEP_ALIVE: "-1"
+      # Bound GPU and RAM use: one model, one request at a time, short context.
+      # The 1.5B q4 model then needs ~1.5 GB of VRAM (or RAM on CPU fallback).
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_CONTEXT_LENGTH: "2048"
     volumes:
       - /srv/appdata/ollama:/root/.ollama
     read_only: true
@@ -61,3 +69,6 @@ services:
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
+    # Room for the model on CPU fallback plus runtime; no swap (swap is already full).
+    mem_limit: 3g
+    memswap_limit: 3g
