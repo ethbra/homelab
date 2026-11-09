@@ -21,6 +21,24 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-09 - NVIDIA driver 580 (CUDA repo, pinned): role change, cutover pending
+- Ollama 0.40.15 (grokbot, PR #14) needs driver >= 550; the box has Debian's
+  535.309.01. bookworm-backports only has 535.216. Chose NVIDIA's CUDA repo,
+  branch 580 (LTS), pinned with `nvidia-driver-pinning-580` (DECISIONS).
+- `nvidia_toolkit` role: CUDA repo + key (`/etc/apt/keyrings`), pin,
+  `nvidia-driver` / `nvidia-driver-cuda` / `nvidia-kernel-dkms`. A one-time purge
+  of the Debian 535 stack happens only with `-e allow_disruptive_restarts=true`;
+  until then applies and drift report "Driver switch pending". Adds a check that
+  the newest kernel has the module, which fails before a reboot would break the GPU.
+- **Found:** kernel 6.1.0-54 (unattended-upgrades, 2026-10-18) was installed
+  with no headers (`linux-headers-amd64` was missing), so DKMS never built
+  the module for it: the next reboot would have come up with no GPU. The role
+  now installs `linux-headers-amd64`; the pull agent applies that on its own.
+- Removed the leftover `cuda-keyring` package (from the 2025 CUDA-repo install;
+  its sources file was already gone).
+- **Owner, open:** run the cutover (RUNBOOK "NVIDIA driver"), then update the
+  ARCHITECTURE machine table and this entry with the date.
+
 ### 2026-11-07 - Grokbot stack added (outbound-only Discord bot)
 - `stacks/grokbot/compose.yaml`: `ghcr.io/ethbra/grokbot:0.2.0` (gpt-6-luna
   answers; Grok is called for X search and the Deep mode), built and

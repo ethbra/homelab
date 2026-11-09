@@ -1,0 +1,66 @@
+# NVIDIA driver branch, from NVIDIA's CUDA apt repo for Debian 12.
+# 580 is NVIDIA's long-term support branch, and the oldest that runs both CUDA
+# runners bundled with Ollama 0.40 (CUDA 13.0 needs >= 580, CUDA 12.8 >= 570).
+# Changing it is a driver swap: needs -e allow_disruptive_restarts=true and a
+# reboot (docs/current/RUNBOOK.md, "NVIDIA driver").
+nvidia_toolkit_driver_branch: "580"
+
+# Host-side driver packages. nvidia-driver pulls the X/GL/Vulkan libraries and
+# the kernel module; nvidia-driver-cuda adds nvidia-smi, libcuda, NVENC/NVDEC
+# (libnvidia-encode1, libnvcuvid1) and nvidia-persistenced, which the container
+# toolkit mounts into GPU containers. Proprietary kernel module, as before
+# (Turing also supports nvidia-kernel-open-dkms; the two conflict).
+nvidia_toolkit_driver_packages:
+  - nvidia-driver
+  - nvidia-driver-cuda
+  - nvidia-kernel-dkms
+
+# The Debian non-free 535 stack (bookworm / bookworm-security), as installed
+# 2026-09-18. Purged once, only while a driver from another branch is installed:
+# several of these names also exist in NVIDIA's repo, so they must never be a
+# standing "absent" list. Checked with `apt-get -s purge`: removes exactly
+# these plus glx-diversions; the container toolkit is untouched.
+nvidia_toolkit_driver_old_packages:
+  - firmware-nvidia-gsp
+  - glx-alternative-nvidia
+  - libcuda1
+  - libegl-nvidia0
+  - libgl1-nvidia-glvnd-glx
+  - libgles-nvidia1
+  - libgles-nvidia2
+  - libglx-nvidia0
+  - libnvcuvid1
+  - libnvidia-allocator1
+  - libnvidia-cfg1
+  - libnvidia-egl-gbm1
+  - libnvidia-egl-wayland1
+  - libnvidia-eglcore
+  - libnvidia-encode1
+  - libnvidia-glcore
+  - libnvidia-glvkspirv
+  - libnvidia-ml1
+  - libnvidia-pkcs11-openssl3
+  - libnvidia-ptxjitcompiler1
+  - libnvidia-rtcore
+  - nvidia-alternative
+  - nvidia-detect
+  - nvidia-driver
+  - nvidia-driver-bin
+  - nvidia-driver-libs
+  - nvidia-egl-common
+  - nvidia-egl-icd
+  - nvidia-installer-cleanup
+  - nvidia-kernel-common
+  - nvidia-kernel-dkms
+  - nvidia-kernel-support
+  - nvidia-legacy-check
+  - nvidia-modprobe
+  - nvidia-persistenced
+  - nvidia-settings
+  - nvidia-smi
+  - nvidia-support
+  - nvidia-suspend-common
+  - nvidia-vdpau-driver
+  - nvidia-vulkan-common
+  - nvidia-vulkan-icd
+  - xserver-xorg-video-nvidia

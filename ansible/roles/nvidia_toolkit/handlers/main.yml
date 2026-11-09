@@ -1,0 +1,5 @@
+# Never reboots by itself: the reboot takes Minecraft (Crafty) and every
+# container down, so the owner does it (RUNBOOK, "NVIDIA driver").
+- name: NVIDIA driver reboot needed
+  ansible.builtin.debug:
+    msg: "NVIDIA driver installed or replaced: reboot to load it (docs/current/RUNBOOK.md, 'NVIDIA driver')."
