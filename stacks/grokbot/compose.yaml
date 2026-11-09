@@ -9,7 +9,7 @@
 name: grokbot
 services:
   grokbot:
-    image: ghcr.io/ethbra/grokbot:0.2.0
+    image: ghcr.io/ethbra/grokbot:0.2.1
     container_name: grokbot
     network_mode: bridge
     restart: unless-stopped
