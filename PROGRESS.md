@@ -22,6 +22,12 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-10 - grokbot 0.6.0: follow-ups without @ always on
+- `stacks/grokbot/compose.yaml`: grokbot 0.6.0. The `/grokinterject` per-channel
+  toggle and `INTERJECT_DEFAULT` are gone; follow-ups without @ are on in every
+  channel (the mute reaction / "not you grok" still silence it for 30 min). The
+  bot drops its old `channel_settings` table on start. No stack changes otherwise.
+
 ### 2026-11-09/10 - NVIDIA driver 580 (CUDA repo, pinned): live 2026-11-10
 - Ollama 0.40.15 (grokbot, PR #14) needs driver >= 550; the box has Debian's
   535.309.01. bookworm-backports only has 535.216. Chose NVIDIA's CUDA repo,
