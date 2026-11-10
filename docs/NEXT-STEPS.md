@@ -108,9 +108,8 @@ Left over:
 
 ## Owner to-dos (any time)
 
-- [ ] NVIDIA driver 535 -> 580 cutover (needs a reboot; Minecraft goes down):
-      RUNBOOK "NVIDIA driver". Before grokbot's Ollama (PR #14) can use the
-      GPU; Jellyfin transcoding later depends on it too
+- [x] NVIDIA driver 535 -> 580 cutover (done 2026-11-10; 580.196.07).
+      Left: confirm Ollama reports CUDA once PR #14 is deployed
 - [x] Rotate the Cloudflare tunnel token (done 2026-10-02 23:41; 4 connections
       healthy on the new token). Steps kept below for next time.
 - [x] ~~Crafty: ATM10's execution command uses Java 21~~ (2026-10-03; rule dropped 2026-10-15: Java is per server)

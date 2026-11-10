@@ -135,10 +135,17 @@ minutes. Plex runs on the CPU between the install and the reboot (the loaded
 1. **Baseline**:
    ```bash
    nvidia-smi --query-gpu=driver_version --format=csv,noheader          # 535.309.01
-   docker run --rm --gpus all nvidia/cuda:13.0.2-base-ubuntu24.04 nvidia-smi
-   #   expected to FAIL now: "unsatisfied condition: cuda>=13.0"
+   docker run --rm --gpus all --entrypoint /bin/sh ollama/ollama:0.40.15 \
+     -c 'timeout 20 ollama serve 2>&1' | grep -E 'driver too old|inference compute'
+   #   on 535: "NVIDIA driver too old ... required_driver=\"550 or newer\"" and library=cpu
    docker inspect crafty-container --format '{{json .HostConfig.PortBindings}}'   # 127.0.0.1:25565 only
    ```
+   Don't use `nvidia/cuda:*` images to test the driver. They ship CUDA
+   forward-compat libraries (`/usr/local/cuda-*/compat`), and the toolkit
+   (`cuda-compat-mode = "ldconfig"`) loads them over the host's libcuda.
+   `nvidia-smi` then reports "CUDA Version: 13.0" on a 535 driver. Forward
+   compat doesn't work on GeForce cards for real CUDA work, so those images
+   only prove that the container can see the GPU.
 2. **Quiet moment**: tell players, run `scripts/crafty-servers.py` to see the live
    server, and stop it in the Crafty web UI.
 3. **Install** (from an up-to-date `main`):
@@ -159,8 +166,11 @@ minutes. Plex runs on the CPU between the install and the reboot (the loaded
    uname -r                                    # 6.1.0-54-amd64
    nvidia-smi                                  # Driver Version: 580.x, CUDA Version: 13.0, RTX 2070 SUPER
    systemctl is-active nvidia-persistenced docker velocity
-   docker run --rm --gpus all nvidia/cuda:13.0.2-base-ubuntu24.04 nvidia-smi   # works now
-   docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
+   docker run --rm --gpus all nvidia/cuda:13.0.2-base-ubuntu24.04 nvidia-smi   # GPU visible in a container
+   docker run --rm --gpus all --entrypoint /bin/sh ollama/ollama:0.40.15 \
+     -c 'timeout 20 ollama serve 2>&1' | grep -E 'driver too old|inference compute'
+   #   the real test: "inference compute" with library=CUDA and the RTX 2070 SUPER,
+   #   and no "driver too old" line
    docker ps --format '{{.Names}}\t{{.Status}}'                     # all stacks up
    docker exec plex nvidia-smi -L                                   # the GPU, inside Plex
    docker inspect crafty-container --format '{{json .HostConfig.PortBindings}}'   # still 127.0.0.1:25565 only
@@ -168,8 +178,8 @@ minutes. Plex runs on the CPU between the install and the reboot (the loaded
    python3 scripts/mc-status-ping.py 127.0.0.1 25565
    sudo homelab-drift                  # "no drift at <hash>"
    ```
-   Once grokbot's Ollama is deployed: `docker logs ollama 2>&1 | grep -i 'inference compute'`
-   should name CUDA and the RTX 2070 SUPER, not CPU.
+   Once grokbot's Ollama is deployed, check the same thing in the running
+   container: `docker logs ollama 2>&1 | grep -E 'driver too old|inference compute'`.
 
 ### Rollback
 

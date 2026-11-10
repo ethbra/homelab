@@ -11,7 +11,7 @@
 |---|---|
 | Hostname / LAN IP | `Svalbard` / `192.168.1.22` (hardcoded in two places, see below) |
 | OS | Debian 12 (bookworm), kernel 6.1 |
-| CPU / GPU | i7-9700K (8 cores) / GeForce RTX 2070 SUPER (8 GB, Turing, compute 7.5), driver branch **580** from NVIDIA's CUDA apt repo, pinned (see "GPU driver" below). Until the cutover in RUNBOOK "NVIDIA driver" is done, the box still runs 535.309.01 (Debian non-free) |
+| CPU / GPU | i7-9700K (8 cores) / GeForce RTX 2070 SUPER (8 GB, Turing, compute 7.5), driver branch **580** from NVIDIA's CUDA apt repo, pinned (see "GPU driver" below); 580.196.07 since 2026-11-10, was 535.309.01 (Debian non-free) |
 | Docker | 29.x, with `nvidia` set as the **default runtime** |
 | Orchestration | Docker Compose: `stacks/<app>/compose.yaml`, deployed to `/opt/homelab/stacks` by the `stacks` role |
 | Host Java | Temurin 25 (runs Velocity only; Minecraft servers use the JVMs inside the Crafty container, chosen per server) |

@@ -7,6 +7,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 | Area | State |
 |---|---|
 | GPU in Docker (NVIDIA toolkit, default runtime) | done |
+| NVIDIA driver | **580.196.07** from NVIDIA's CUDA repo, pinned to the 580 branch (2026-11-10; was Debian 535) |
 | Plex in container, library migrated, same server identity | done |
 | Plex hardware transcoding | **not available**: needs Plex Pass (free account). GPU is visible in the container (`nvidia-smi` OK), so it works the day the account has Plex Pass. CPU transcoding (`libx264`) until then |
 | ATM10 backups | schedule every 2 days at 03:00, keep 5; fresh backup 2026-10-03 |
@@ -21,7 +22,7 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
-### 2026-11-09 - NVIDIA driver 580 (CUDA repo, pinned): role change, cutover pending
+### 2026-11-09/10 - NVIDIA driver 580 (CUDA repo, pinned): live 2026-11-10
 - Ollama 0.40.15 (grokbot, PR #14) needs driver >= 550; the box has Debian's
   535.309.01. bookworm-backports only has 535.216. Chose NVIDIA's CUDA repo,
   branch 580 (LTS), pinned with `nvidia-driver-pinning-580` (DECISIONS).
@@ -36,8 +37,16 @@ Newest first. Update this whenever something is changed, decided or left open.
   now installs `linux-headers-amd64`; the pull agent applies that on its own.
 - Removed the leftover `cuda-keyring` package (from the 2025 CUDA-repo install;
   its sources file was already gone).
-- **Owner, open:** run the cutover (RUNBOOK "NVIDIA driver"), then update the
-  ARCHITECTURE machine table and this entry with the date.
+- Baseline 2026-11-10, on 535: `ollama/ollama:0.40.15` logs "NVIDIA driver too
+  old ... required_driver=550 or newer" and runs on CPU (0 B VRAM). Meanwhile
+  `nvidia/cuda:13.0.2` + `nvidia-smi` *passes*: the image's forward-compat
+  libcuda (580.95.05) is loaded over the host's, which says nothing about
+  real CUDA work on a GeForce card. RUNBOOK now tests with the Ollama image.
+- **Cutover done 2026-11-10** (RUNBOOK "NVIDIA driver"): booted 6.1.0-54,
+  driver 580.196.07 (`nvidia-smi`: CUDA 13.0), DKMS module built for every
+  installed kernel, `nvidia-driver-pinning-580` and `linux-headers-amd64`
+  installed. All 11 containers came back; Crafty still on 127.0.0.1:25565 only.
+  Ollama on the GPU is verified when grokbot's Ollama (PR #14) is deployed.
 
 ### 2026-11-07 - Grokbot stack added (outbound-only Discord bot)
 - `stacks/grokbot/compose.yaml`: `ghcr.io/ethbra/grokbot:0.2.0` (gpt-6-luna
