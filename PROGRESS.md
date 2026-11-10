@@ -22,6 +22,16 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-10 - Ollama: persistent CUDA kernel cache
+- Follow-ups without @ were skipped after the deploy: the first local-model
+  checks timed out (bot limit 5 s). Reproduced in a throwaway container: on
+  every fresh Ollama process the driver compiles the GPU kernels again (load
+  ~28 s, first answer ~37 s), because its cache (`~/.nv`) can't be written on
+  the read-only root. `CUDA_CACHE_PATH=/root/.ollama/cuda-cache` (on
+  `/srv/appdata/ollama`, ~66 MB): load 1.2 s, first answer 0.1 s after the first start.
+- Not a permissions issue: the bot gets message content (Message Content
+  intent; it scores the text of follow-ups).
+
 ### 2026-11-09/10 - NVIDIA driver 580 (CUDA repo, pinned): live 2026-11-10
 - Ollama 0.40.15 (grokbot, PR #14) needs driver >= 550; the box has Debian's
   535.309.01. bookworm-backports only has 535.216. Chose NVIDIA's CUDA repo,
