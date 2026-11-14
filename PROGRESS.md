@@ -22,6 +22,16 @@ Newest first. Update this whenever something is changed, decided or left open.
 
 ## Log
 
+### 2026-11-14 - grokbot 0.7.0: Qwen3 1.7B decides follow-ups, Ollama cap 10 GB
+- `stacks/grokbot/compose.yaml`: grokbot 0.7.0 with `INTERJECT_MODEL: qwen3:1.7b`.
+  The local model now sees every follow-up that passes the hard skips (0.6.0 only
+  asked it at a heuristic score of 5+, so "how old is he" never got there), with a
+  new prompt and thinking off. The bot pulls the model and warms it up at start.
+- Ollama `mem_limit` 3g -> 10g. **Found 2026-11-13:** llama-server keeps a prompt
+  cache in RAM that can grow to 8 GB; at 3g with no swap the runner was OOM-killed
+  and the box froze until a reboot.
+- After the deploy, `qwen2.5:1.5b-instruct-q4_K_M` can be removed from Ollama.
+
 ### 2026-11-10 - grokbot 0.6.0: follow-ups without @ always on
 - `stacks/grokbot/compose.yaml`: grokbot 0.6.0. The `/grokinterject` per-channel
   toggle and `INTERJECT_DEFAULT` are gone; follow-ups without @ are on in every
