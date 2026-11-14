@@ -29,7 +29,7 @@ services:
       DAILY_BUDGET_USD: "2.00"
       PER_USER_DAILY_USD: "0.50"
       OLLAMA_URL: http://127.0.0.1:11434
-      INTERJECT_MODEL: qwen2.5:1.5b-instruct-q4_K_M
+      INTERJECT_MODEL: qwen3:1.7b
     volumes:
       - /srv/appdata/grokbot:/data
     read_only: true
@@ -57,7 +57,7 @@ services:
       OLLAMA_HOST: 127.0.0.1:11434
       OLLAMA_KEEP_ALIVE: "-1"
       # Bound GPU and RAM use: one model, one request at a time, short context.
-      # The 1.5B q4 model then needs ~1.5 GB of VRAM (or RAM on CPU fallback).
+      # The 1.7B q4 model then needs ~1.5 GB of VRAM (or RAM on CPU fallback).
       OLLAMA_MAX_LOADED_MODELS: "1"
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_CONTEXT_LENGTH: "2048"
@@ -69,6 +69,8 @@ services:
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
-    # Room for the model on CPU fallback plus runtime; no swap (swap is already full).
-    mem_limit: 3g
-    memswap_limit: 3g
+    # Room for the model on CPU fallback plus llama-server's prompt cache, which
+    # grows in RAM up to 8 GB. At 3g the cache hit the cap, the runner was
+    # OOM-killed and the box thrashed (2026-11-13). No swap (swap is already full).
+    mem_limit: 10g
+    memswap_limit: 10g
